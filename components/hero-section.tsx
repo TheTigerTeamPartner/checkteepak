@@ -50,7 +50,7 @@ export function HeroSection() {
                 <Input
                   type="text"
                   placeholder="ค้นหาด้วยเลขบัญชี, เบอร์โทร, หรือชื่อ"
-                  className="pl-12 pr-4 py-4 md:py-6 text-base md:text-lg bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder-white/80 font-medium"
+                  className="pl-12 pr-4 py-8 md:py-10 text-base md:text-lg bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder:text-white/95 font-medium"
                   style={{ fontSize: "16px" }}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
