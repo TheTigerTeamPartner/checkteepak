@@ -36,8 +36,9 @@ export function HeroSection() {
   }
 
   return (
-    <div className="relative bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl overflow-hidden">
-      <div className="absolute inset-0 bg-[url('/placeholder.svg?height=600&width=1200')] opacity-10 bg-cover bg-center" />
+    <div className="relative rounded-xl overflow-hidden">
+      <div className="absolute inset-0 bg-[url('/hero-bg.jpg')] bg-cover bg-center opacity-100" />
+      <div className="absolute inset-0 bg-black/50" />
       <div className="relative px-6 py-12 md:py-20 md:px-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">เช็คที่พัก ก่อนจอง</h1>
         <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto">
