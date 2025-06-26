@@ -39,9 +39,7 @@ export default function Header() {
           <div className="hidden md:block"></div>
 
           <Link href="/" className="flex items-center gap-2">
-            <div className="bg-gradient-to-r from-teal-500 to-blue-500 text-white font-bold rounded-md p-1.5">
-              <span className="text-lg">CT</span>
-            </div>
+            <img src="/logo.png" alt="Logo" className="w-auto h-8" />
             <span className="font-bold text-xl hidden sm:inline-block">เช็คที่พัก</span>
           </Link>
         </div>
