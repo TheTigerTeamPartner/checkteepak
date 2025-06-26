@@ -14,7 +14,7 @@ interface Agent {
   name: string
   location: string
   image_url: string
-  status: string
+  status: AgentStatus
   rating: number
   review_count: number
   phone: string
@@ -38,11 +38,11 @@ export function RecentAccommodations() {
   }, [])
 
   // ฟังก์ชันสำหรับแสดง status badge
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: AgentStatus) => {
     switch (status) {
       case "verified":
         return (
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
             <CheckCircle className="h-3 w-3" />
             ยืนยันตัวตนแล้ว
           </Badge>
