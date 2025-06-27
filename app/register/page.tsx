@@ -26,7 +26,7 @@ export default function RegisterPage() {
     agreeNewsletter: false,
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (formData.password !== formData.confirmPassword) {
       alert("รหัสผ่านไม่ตรงกัน")
@@ -36,9 +36,27 @@ export default function RegisterPage() {
       alert("กรุณายอมรับข้อกำหนดและเงื่อนไข")
       return
     }
-    // ในระบบจริงจะส่งข้อมูลไป API
-    localStorage.setItem("registrationData", JSON.stringify(formData))
-    window.location.href = "/select-package"
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!res.ok) {
+        const { error } = await res.json()
+        alert(error || "เกิดข้อผิดพลาด")
+        return
+      }
+
+      // ถ้าไม่มี error, ระบบจะ redirect อยู่แล้วใน backend
+      // หรือจะ redirect ด้วย client ก็ได้แบบนี้:
+      window.location.href = "/select-package"
+    } catch (err) {
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์")
+    }
   }
 
   return (
