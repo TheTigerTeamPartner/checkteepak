@@ -295,7 +295,7 @@ const [loading, setLoading] = useState(true)
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">อีเมล</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData?.contact?.email}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData?.email}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
@@ -313,7 +313,7 @@ const [loading, setLoading] = useState(true)
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyContact("email", agentData?.contact?.email)}
+                    onClick={() => copyContact("email", agentData?.email)}
                     className="hover:bg-gray-100"
                   >
                     <Copy className="h-4 w-4" />
@@ -328,7 +328,7 @@ const [loading, setLoading] = useState(true)
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">Line ID</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData?.contact?.line_id}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData?.line_id}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
@@ -346,7 +346,7 @@ const [loading, setLoading] = useState(true)
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyContact("line", agentData?.contact?.line_id)}
+                    onClick={() => copyContact("line", agentData?.line_id)}
                     className="hover:bg-gray-100"
                   >
                     <Copy className="h-4 w-4" />
@@ -374,7 +374,7 @@ const [loading, setLoading] = useState(true)
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">Facebook Page</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData?.social?.facebook}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData?.social_facebook}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
@@ -390,7 +390,7 @@ const [loading, setLoading] = useState(true)
                     </Badge>
                   )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-blue-100">
-                  <a href={agentData?.social?.facebook} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.social_facebook} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -404,7 +404,7 @@ const [loading, setLoading] = useState(true)
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">Instagram</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData?.social?.instagram}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData?.instagram}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
@@ -420,7 +420,7 @@ const [loading, setLoading] = useState(true)
                     </Badge>
                   )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-pink-100">
-                  <a href={agentData?.social?.instagram} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.instagram} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -434,7 +434,7 @@ const [loading, setLoading] = useState(true)
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">เว็บไซต์</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData?.social?.website}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData?.website}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
@@ -450,7 +450,7 @@ const [loading, setLoading] = useState(true)
                     </Badge>
                   )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-gray-100">
-                  <a href={agentData?.social?.website} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.website} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
