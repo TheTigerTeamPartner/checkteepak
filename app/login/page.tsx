@@ -1,9 +1,10 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,27 +14,31 @@ import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  })
+  const [formData, setFormData] = useState({ email: "", password: "" })
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const supabase = createClientComponentClient()
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
 
-    // Mock authentication - ในระบบจริงจะส่งข้อมูลไป API
-    console.log("Login attempt:", formData)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    })
 
-    // ตรวจสอบข้อมูลล็อกอิน (Mock)
-    if (formData.email === "admin@checkteepak.com" && formData.password === "admin123") {
-      alert("เข้าสู่ระบบสำเร็จ! กำลังเข้าสู่แดชบอร์ดผู้ดูแลระบบ...")
-      window.location.href = "/dashboard"
-    } else if (formData.email === "somchai@example.com" && formData.password === "somchai123") {
-      alert("เข้าสู่ระบบสำเร็จ! กำลังเข้าสู่แดชบอร์ดสมาชิกยืนยัน...")
-      window.location.href = "/dashboard"
-    } else {
+    if (error) {
       alert("อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง")
+      console.error("Login error:", error.message)
+      setLoading(false)
+      return
     }
+
+    const redirectTo = searchParams.get("redirectTo") || "/dashboard"
+    router.push(redirectTo)
   }
 
   return (
@@ -98,8 +103,8 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full">
-              เข้าสู่ระบบ
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
             </Button>
           </form>
 
@@ -121,26 +126,6 @@ export default function LoginPage() {
             <Button variant="outline" className="w-full">
               เข้าสู่ระบบด้วย Facebook
             </Button>
-          </div>
-
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-medium text-gray-900 mb-3">บัญชีทดสอบ:</h3>
-            <div className="space-y-2 text-sm">
-              <div>
-                <strong>ผู้ดูแลระบบ:</strong>
-                <br />
-                อีเมล: admin@checkteepak.com
-                <br />
-                รหัสผ่าน: admin123
-              </div>
-              <div>
-                <strong>สมาชิกยืนยัน:</strong>
-                <br />
-                อีเมล: somchai@example.com
-                <br />
-                รหัสผ่าน: somchai123
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
