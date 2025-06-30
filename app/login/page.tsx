@@ -37,6 +37,7 @@ export default function LoginPage() {
       return
     }
 
+    alert("เข้าสู่ระบบสำเร็จ")
     const redirectTo = searchParams.get("redirectTo") || "/dashboard"
     router.push(redirectTo)
   }
