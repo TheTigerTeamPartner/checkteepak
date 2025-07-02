@@ -19,73 +19,126 @@ import {
   CreditCard,
   User,
 } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
 
-// Mock data สำหรับโปรไฟล์เอเจนต์
-const agentData = {
-  id: "1",
-  name: "คุณสมชาย ใจดี",
-  title: "นายหน้าอสังหาริมทรัพย์มืออาชีพ",
-  location: "เชียงใหม่, ประเทศไทย",
-  joinDate: "มิถุนายน 2567",
-  verified: true,
-  profileImage: "/placeholder.svg?height=150&width=150&text=สมชาย",
-  coverImage: "/placeholder.svg?height=300&width=800&text=Cover",
-  bio: "นายหน้าอสังหาริมทรัพย์มืออาชีพ ประสบการณ์กว่า 10 ปี เชี่ยวชาญด้านคอนโดมิเนียมและบ้านเดี่ยวในเขตเชียงใหม่ ให้บริการด้วยความซื่อสัตย์และใส่ใจลูกค้าทุกท่าน",
-  specialties: ["คอนโดมิเนียม", "บ้านเดี่ยว", "ทาวน์เฮาส์", "อสังหาฯ เพื่อการลงทุน"],
+interface AgentProfile {
+  id: string
+  name: string
+  title: string
+  location: string
+  join_date: string
+  verified: boolean
+  profile_image: string
+  cover_image: string
+  bio: string
+  specialties: string[]
   contact: {
-    phone: "081-234-5678",
-    email: "somchai.jaidee@example.com",
-    lineId: "@somchai_agent",
-  },
+    phone: string
+    email: string
+    line_id: string
+  }
   social: {
-    facebook: "https://facebook.com/somchai.agent",
-    instagram: "https://instagram.com/somchai_agent",
-    website: "https://somchai-agent.com",
-  },
+    facebook: string
+    instagram: string
+    website: string
+  }
   stats: {
-    totalContacts: 47,
-    responseRate: 95,
-    avgResponseTime: "2 ชั่วโมง",
-    successfulDeals: 23,
-    profileViews: 1283,
-  },
-  certifications: [
-    {
-      name: "ใบอนุญาตนายหน้าอสังหาริมทรัพย์",
-      issuer: "กรมที่ดิน",
-      date: "2020",
-      verified: true,
-    },
-    {
-      name: "ใบรับรองการอบรมจริยธรรม",
-      issuer: "สมาคมนายหน้าอสังหาริมทรัพย์",
-      date: "2023",
-      verified: true,
-    },
-  ],
-  banking: [
-    {
-      id: 1,
-      bankName: "ธนาคารกสิกรไทย",
-      accountNumber: "123-4-56789-0",
-      accountName: "นายสมชาย ใจดี",
-      isPrimary: true,
-    },
-  ],
+    total_contacts: number
+    response_rate: number
+    avg_response_time: string
+    successful_deals: number
+    profile_views: number
+  }
+  status: "verified" | "experienced" | "new"
+  certifications: {
+    id: number
+    name: string
+    issuer: string
+    date: string
+    verified: boolean
+  }[]
+  banking: {
+    id: number
+    bank_name: string
+    account_number: string
+    account_name: string
+    is_primary: boolean
+  }[]
 }
 
 export default function AgentProfilePage() {
+  const [agentData, setAgentData] = useState<AgentProfile | null>(null)
+const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const params = useParams()
+  const agentId = params.id
+
+  useEffect(() => {
+    console.log('Fetching agent with id:', agentId)
+    
+    if (!agentId) {
+      setError('No agent ID provided')
+      return
+    }
+
+    const fetchAgentData = async () => {
+      try {
+        setLoading(true)
+        console.log('Fetching from Supabase...')
+        
+        const { data, error } = await supabase
+          .from('agents')
+          .select('*')
+          .eq('id', agentId)
+          .single()
+
+        if (error) {
+          console.error('Supabase error:', {
+            message: error.message,
+            details: error.details,
+            code: error.code,
+            hint: error.hint
+          })
+          setError(`Error: ${error.message}\nDetails: ${error.details}\nCode: ${error.code}`)
+          return
+        }
+
+        if (!data) {
+          setError(`No agent found with ID: ${agentId}`)
+          return
+        }
+
+        console.log('Successfully fetched agent:', {
+          id: data.id,
+          name: data.name
+        })
+        setAgentData(data)
+      } catch (err) {
+        console.error('Unexpected error:', err)
+        setError(`Failed to fetch agent data: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAgentData()
+  }, [agentId])
+
+  if (loading) return <div>Loading...</div>
+  if (error) return <div>Error: {error}</div>
+  if (!agentData) return <div>No agent found</div>
+
   const copyContact = (type: string, value: string) => {
     navigator.clipboard.writeText(value)
-    // แสดง toast notification
   }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Cover Image */}
       <div className="relative h-48 md:h-64 lg:h-80 bg-gradient-to-r from-teal-500 via-blue-600 to-indigo-600 overflow-hidden">
         <img
-          src={agentData.coverImage || "/placeholder.svg"}
+          src={agentData?.cover_image || "/placeholder.svg"}
           alt="Cover"
           className="w-full h-full object-cover opacity-30"
         />
@@ -100,12 +153,12 @@ export default function AgentProfilePage() {
             <div className="relative mx-auto lg:mx-0">
               <div className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full overflow-hidden border-4 border-white shadow-2xl ring-4 ring-teal-50">
                 <img
-                  src={agentData.profileImage || "/placeholder.svg"}
-                  alt={agentData.name}
+                  src={agentData?.profile_image || "/placeholder.svg"}
+                  alt={agentData?.name || "Agent"}
                   className="w-full h-full object-cover"
                 />
               </div>
-              {agentData.verified && (
+              {agentData?.verified && (
                 <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-green-500 rounded-full p-2 md:p-2.5 shadow-lg ring-4 ring-white">
                   <CheckCircle className="h-4 w-4 md:h-6 md:w-6 text-white" />
                 </div>
@@ -116,31 +169,44 @@ export default function AgentProfilePage() {
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 lg:gap-6">
                 <div className="space-y-3">
                   <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
-                    {agentData.name}
+                    {agentData?.name}
                   </h1>
-                  <p className="text-lg md:text-xl text-gray-600 font-medium">{agentData.title}</p>
-                  <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-6 text-sm md:text-base text-gray-500">
+                  <p className="text-lg md:text-xl text-gray-600 font-medium">{agentData?.title}</p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-2 sm:gap-3 text-sm md:text-base text-gray-500">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 md:h-5 md:w-5 text-teal-600" />
-                      <span>{agentData.location}</span>
+                      <span>{agentData?.location}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 md:h-5 md:w-5 text-teal-600" />
-                      <span>สมาชิกตั้งแต่ {agentData.joinDate}</span>
+                      <span>สมาชิกตั้งแต่ {agentData?.join_date}</span>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 md:gap-3">
-                    <Badge className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 text-sm font-medium">
-                      <Shield className="h-3 w-3 mr-1.5" />
-                      ยืนยันตัวตนแล้ว
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1.5 text-sm font-medium"
-                    >
-                      <CheckCircle className="h-3 w-3 mr-1.5" />
-                      มืออาชีพ
-                    </Badge>
+                    {agentData?.status === "verified" && (
+                      <Badge className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 text-sm font-medium">
+                        <Shield className="h-3 w-3 mr-1.5" />
+                        ยืนยันตัวตนแล้ว
+                      </Badge>
+                    )}
+                    {agentData?.status === "experienced" && (
+                      <Badge
+                        variant="outline"
+                        className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1.5 text-sm font-medium"
+                      >
+                        <CheckCircle className="h-3 w-3 mr-1.5" />
+                        มืออาชีพ
+                      </Badge>
+                    )}
+                    {agentData?.status === "new" && (
+                      <Badge
+                        variant="outline"
+                        className="bg-amber-50 text-amber-700 border-amber-200 px-3 py-1.5 text-sm font-medium"
+                      >
+                        <User className="h-3 w-3 mr-1.5" />
+                        สมาชิกใหม่
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -161,11 +227,11 @@ export default function AgentProfilePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <p className="text-gray-700 leading-relaxed text-base md:text-lg">{agentData.bio}</p>
+              <p className="text-gray-700 leading-relaxed text-base md:text-lg">{agentData?.bio}</p>
               <div>
                 <h4 className="font-semibold mb-3 text-gray-800 text-lg">ความเชี่ยวชาญ</h4>
                 <div className="flex flex-wrap gap-2 md:gap-3">
-                  {agentData.specialties.map((specialty, index) => (
+                  {agentData?.specialties?.map((specialty, index) => (
                     <Badge
                       key={index}
                       variant="secondary"
@@ -178,7 +244,6 @@ export default function AgentProfilePage() {
               </div>
             </CardContent>
           </Card>
-
           {/* 2. ข้อมูลติดต่อ */}
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="pb-4">
@@ -197,18 +262,25 @@ export default function AgentProfilePage() {
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">เบอร์โทรศัพท์</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData.contact.phone}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData?.phone}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    ยืนยันแล้ว
-                  </Badge>
+                  {agentData?.status === "verified" ? (
+                    <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      ยืนยันแล้ว
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-red-600 border-red-600 bg-red-50">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      ไม่ได้ยืนยัน
+                    </Badge>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyContact("phone", agentData.contact.phone)}
+                    onClick={() => copyContact("phone", agentData?.phone)}
                     className="hover:bg-gray-100"
                   >
                     <Copy className="h-4 w-4" />
@@ -223,18 +295,25 @@ export default function AgentProfilePage() {
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">อีเมล</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData.contact.email}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData?.email}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    ยืนยันแล้ว
-                  </Badge>
+                  {agentData?.status === "verified" ? (
+                    <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      ยืนยันแล้ว
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-red-600 border-red-600 bg-red-50">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      ไม่ได้ยืนยัน
+                    </Badge>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyContact("email", agentData.contact.email)}
+                    onClick={() => copyContact("email", agentData?.email)}
                     className="hover:bg-gray-100"
                   >
                     <Copy className="h-4 w-4" />
@@ -249,18 +328,25 @@ export default function AgentProfilePage() {
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">Line ID</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData.contact.lineId}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData?.line_id}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    ยืนยันแล้ว
-                  </Badge>
+                  {agentData?.status === "verified" ? (
+                    <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      ยืนยันแล้ว
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-red-600 border-red-600 bg-red-50">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      ไม่ได้ยืนยัน
+                    </Badge>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyContact("line", agentData.contact.lineId)}
+                    onClick={() => copyContact("line", agentData?.line_id)}
                     className="hover:bg-gray-100"
                   >
                     <Copy className="h-4 w-4" />
@@ -288,16 +374,23 @@ export default function AgentProfilePage() {
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">Facebook Page</div>
-                    <div className="text-sm md:text-base text-gray-600">facebook.com/somchai.agent</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData?.social_facebook}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    ยืนยันแล้ว
-                  </Badge>
+                  {agentData?.status === "verified" ? (
+                    <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      ยืนยันแล้ว
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-red-600 border-red-600 bg-red-50">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      ไม่ได้ยืนยัน
+                    </Badge>
+                  )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-blue-100">
-                    <a href={agentData.social.facebook} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.social_facebook} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -311,16 +404,23 @@ export default function AgentProfilePage() {
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">Instagram</div>
-                    <div className="text-sm md:text-base text-gray-600">@somchai_agent</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData?.instagram}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    ยืนยันแล้ว
-                  </Badge>
+                  {agentData?.status === "verified" ? (
+                    <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      ยืนยันแล้ว
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-red-600 border-red-600 bg-red-50">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      ไม่ได้ยืนยัน
+                    </Badge>
+                  )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-pink-100">
-                    <a href={agentData.social.instagram} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.instagram} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -334,16 +434,23 @@ export default function AgentProfilePage() {
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">เว็บไซต์</div>
-                    <div className="text-sm md:text-base text-gray-600">somchai-agent.com</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData?.website}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    ยืนยันแล้ว
-                  </Badge>
+                  {agentData?.status === "verified" ? (
+                    <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      ยืนยันแล้ว
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-red-600 border-red-600 bg-red-50">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      ไม่ได้ยืนยัน
+                    </Badge>
+                  )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-gray-100">
-                    <a href={agentData.social.website} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.website} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -363,7 +470,7 @@ export default function AgentProfilePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {agentData.banking.map((account) => (
+              {agentData?.banking?.map((account) => (
                 <div
                   key={account.id}
                   className="flex flex-col md:flex-row md:items-center md:justify-between p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200"
@@ -400,22 +507,24 @@ export default function AgentProfilePage() {
           </Card>
 
           {/* Warning Section */}
-          <Card className="border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 shadow-lg">
-            <CardContent className="p-6 md:p-8">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
-                  <AlertTriangle className="h-6 w-6 md:h-7 md:w-7 text-amber-600" />
+          {agentData?.status === "verified" && (
+            <Card className="border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 shadow-lg">
+              <CardContent className="p-6 md:p-8">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
+                    <AlertTriangle className="h-6 w-6 md:h-7 md:w-7 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-amber-800 mb-3 text-lg md:text-xl">ข้อควรระวัง</h3>
+                    <p className="text-amber-700 text-sm md:text-base leading-relaxed">
+                      แม้ว่าโปรไฟล์นี้จะผ่านการยืนยันตัวตนแล้ว แต่ควรตรวจสอบข้อมูลเพิ่มเติมก่อนทำธุรกรรม
+                      และหลีกเลี่ยงการโอนเงินล่วงหน้าทั้งจำนวนโดยไม่มีหลักประกัน
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-amber-800 mb-3 text-lg md:text-xl">ข้อควรระวัง</h3>
-                  <p className="text-amber-700 text-sm md:text-base leading-relaxed">
-                    แม้ว่าโปรไฟล์นี้จะผ่านการยืนยันตัวตนแล้ว แต่ควรตรวจสอบข้อมูลเพิ่มเติมก่อนทำธุรกรรม
-                    และหลีกเลี่ยงการโอนเงินล่วงหน้าทั้งจำนวนโดยไม่มีหลักประกัน
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

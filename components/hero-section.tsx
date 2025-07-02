@@ -36,8 +36,9 @@ export function HeroSection() {
   }
 
   return (
-    <div className="relative bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl overflow-hidden">
-      <div className="absolute inset-0 bg-[url('/placeholder.svg?height=600&width=1200')] opacity-10 bg-cover bg-center" />
+    <div className="relative rounded-xl overflow-hidden">
+      <div className="absolute inset-0 bg-[url('/hero-bg.jpg')] bg-cover bg-center opacity-100" />
+      <div className="absolute inset-0 bg-black/50" />
       <div className="relative px-6 py-12 md:py-20 md:px-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">เช็คที่พัก ก่อนจอง</h1>
         <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto">
@@ -50,7 +51,7 @@ export function HeroSection() {
                 <Input
                   type="text"
                   placeholder="ค้นหาด้วยเลขบัญชี, เบอร์โทร, หรือชื่อ"
-                  className="pl-12 pr-4 py-4 md:py-6 text-base md:text-lg bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder-white/80 font-medium"
+                  className="pl-12 pr-4 py-8 md:py-10 text-base md:text-lg bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder:text-white/95 font-medium"
                   style={{ fontSize: "16px" }}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}

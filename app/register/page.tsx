@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -15,6 +14,7 @@ import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react"
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -26,19 +26,41 @@ export default function RegisterPage() {
     agreeNewsletter: false,
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (formData.password !== formData.confirmPassword) {
       alert("รหัสผ่านไม่ตรงกัน")
       return
     }
+
     if (!formData.agreeTerms) {
       alert("กรุณายอมรับข้อกำหนดและเงื่อนไข")
       return
     }
-    // ในระบบจริงจะส่งข้อมูลไป API
-    localStorage.setItem("registrationData", JSON.stringify(formData))
-    window.location.href = "/select-package"
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!res.ok) {
+        const { error } = await res.json()
+        alert(error || "เกิดข้อผิดพลาด")
+        return
+      }
+
+      alert("สมัครสมาชิกสำเร็จ! กำลังเปลี่ยนเส้นทาง...")
+      setTimeout(() => {
+        window.location.href = "/select-package"
+      }, 2000)
+    } catch (err) {
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์")
+    }
   }
 
   return (
@@ -168,7 +190,9 @@ export default function RegisterPage() {
                 <Checkbox
                   id="agreeTerms"
                   checked={formData.agreeTerms}
-                  onCheckedChange={(checked) => setFormData({ ...formData, agreeTerms: checked as boolean })}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, agreeTerms: checked as boolean })
+                  }
                 />
                 <Label htmlFor="agreeTerms" className="text-sm">
                   ฉันยอมรับ{" "}
@@ -186,7 +210,9 @@ export default function RegisterPage() {
                 <Checkbox
                   id="agreeNewsletter"
                   checked={formData.agreeNewsletter}
-                  onCheckedChange={(checked) => setFormData({ ...formData, agreeNewsletter: checked as boolean })}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, agreeNewsletter: checked as boolean })
+                  }
                 />
                 <Label htmlFor="agreeNewsletter" className="text-sm">
                   ฉันต้องการรับข่าวสารและโปรโมชั่นทางอีเมล
