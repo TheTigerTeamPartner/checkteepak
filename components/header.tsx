@@ -34,7 +34,7 @@ export default function Header() {
       className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isDashboard ? "md:block hidden" : ""}`}
     >
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center justify-center md:justify-start flex-1 md:flex-initial">
+        <div className="flex items-center justify-start flex-1">
           {/* ซ่อนเมนูแฮมเบอร์เกอร์บนมือถือ */}
           <div className="hidden md:block"></div>
 
@@ -78,10 +78,10 @@ export default function Header() {
             </DropdownMenu>
           ) : (
             <>
-              <Button asChild variant="outline" className="hidden md:inline-flex">
+              <Button asChild variant="outline" className="inline-flex">
                 <Link href="/login">เข้าสู่ระบบ</Link>
               </Button>
-              <Button asChild className="hidden md:inline-flex">
+              <Button asChild className="inline-flex">
                 <Link href="/register">สมัครสมาชิก</Link>
               </Button>
             </>
