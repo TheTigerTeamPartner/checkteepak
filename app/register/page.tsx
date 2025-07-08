@@ -235,15 +235,6 @@ export default function RegisterPage() {
               </Link>
             </p>
           </div>
-
-          <div className="space-y-2">
-            <Button variant="outline" className="w-full">
-              สมัครด้วย Google
-            </Button>
-            <Button variant="outline" className="w-full">
-              สมัครด้วย Facebook
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>
