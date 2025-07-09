@@ -95,10 +95,7 @@ export default function AboutPage() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Button size="lg" className="bg-white text-teal-600 hover:bg-white/90">
-              ร่วมงานกับเรา
-            </Button>
-            <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
-              ติดต่อทีมงาน
+              ติดต่อเรา
             </Button>
           </div>
         </div>
@@ -352,24 +349,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl overflow-hidden">
-        <div className="px-6 py-16 md:py-20 md:px-12 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">ร่วมเป็นส่วนหนึ่งในการสร้างการท่องเที่ยวที่ปลอดภัย</h2>
-          <p className="text-lg text-white/90 mb-8 max-w-3xl mx-auto">
-            ไม่ว่าคุณจะเป็นนักท่องเที่ยว เจ้าของที่พัก หรือผู้ประกอบการในอุตสาหกรรมท่องเที่ยว
-            คุณสามารถมีส่วนร่วมในการสร้างสังคมการท่องเที่ยวที่ปลอดภัยไปด้วยกัน
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button size="lg" className="bg-white text-teal-600 hover:bg-white/90">
-              สมัครสมาชิก
-            </Button>
-            <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
-              ติดต่อเรา
-            </Button>
-          </div>
-        </div>
-      </section>
+
     </div>
   )
 }
