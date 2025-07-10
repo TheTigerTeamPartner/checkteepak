@@ -25,6 +25,7 @@
     "@radix-ui/react-toast": "^1.1.5",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@supabase/auth-helpers-nextjs": "latest",
+    "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "latest",
     "@tanstack/react-table": "latest",
     "class-variance-authority": "^0.7.1",

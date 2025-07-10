@@ -1,12 +1,19 @@
 "use client"
 
+"use client"
+
 import type React from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import type { User as SupabaseUser } from "@supabase/supabase-js"
+
 import { LayoutDashboard, CheckCircle, Settings, Bell, Home, Crown, User, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
+import { UserNav } from "@/components/user-nav"
 
 interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
   items: {
@@ -17,7 +24,55 @@ interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const supabase = createClientComponentClient()
+  const router = useRouter()
+  const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+      } else {
+        setUser(session.user);
+      }
+      setLoading(false);
+    };
+
+    checkSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        router.push('/login');
+      }
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, [supabase, router]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  };
+    if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>
+  }
+
+  if (!user) {
+    return null // Or a redirect component, though the effect already handles it
+  }
+
   const memberItems = [
+    {
+      href: `/dashboard/${user.id}`,
+      title: "ภาพรวม",
+      icon: <LayoutDashboard className="h-5 w-5" />,
+    },
     {
       href: "/dashboard",
       title: "ภาพรวม",
@@ -82,57 +137,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       <div className="flex flex-col flex-1">
-        {/* Mobile Header with Hamburger Menu */}
-        <header className="md:hidden bg-white border-b border-gray-200 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">เปิดเมนู</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[250px] p-0">
-                <div className="px-3 py-4">
-                  <div className="flex items-center px-3 py-2 mb-6">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">CT</span>
-                      </div>
-                      <div>
-                        <h2 className="text-sm font-semibold text-gray-900">Check Teepak</h2>
-                        <p className="text-xs text-gray-500">สมาชิกยืนยัน</p>
-                      </div>
-                    </div>
-                  </div>
-                  <SidebarNav items={memberItems} />
 
-                  {/* Bottom section in mobile menu */}
-                  <div className="mt-8 pt-3 border-t border-gray-200">
-                    <Link
-                      href="/"
-                      className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                    >
-                      <Home className="h-5 w-5" />
-                      กลับหน้าหลัก
-                    </Link>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            <div className="flex-1 flex justify-center">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">CT</span>
-                </div>
-                <h1 className="text-lg font-semibold text-gray-900">แดชบอร์ดสมาชิก</h1>
-              </div>
-            </div>
-
-            <div className="w-10">{/* Placeholder to balance the layout */}</div>
-          </div>
-        </header>
 
         {/* Main content */}
         <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>

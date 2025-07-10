@@ -1,33 +1,54 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { usePathname } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { User } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogDescription,
-//   DialogHeader,
-//   DialogTitle,
-//   DialogTrigger,
-// } from "@/components/ui/dialog"
+import { useState, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { User as SupabaseUser } from "@supabase/supabase-js";
+import { UserNav } from "@/components/user-nav";
 
 export default function Header() {
-  const pathname = usePathname()
-  const isDashboard = pathname?.startsWith("/dashboard")
+  const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+  const isDashboard = pathname?.startsWith("/dashboard");
 
-  const [isLoggedIn] = useState(() => {
-    if (typeof window !== "undefined") {
-      const userType = localStorage.getItem("userType")
-      return userType === "admin" || userType === "member"
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+    };
+    checkSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    router.push("/");
+    router.refresh();
+  };
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Sign out error:", error.message);
+      return;
     }
-    return false
-  })
-
-  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
+    localStorage.removeItem("userType");
+    setUser(null); // Clear user state
+    router.push("/");
+    router.refresh(); // Refresh the page to reflect signed-out state
+  };
 
   return (
     <header
@@ -35,59 +56,36 @@ export default function Header() {
     >
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center justify-start flex-1">
-          {/* ซ่อนเมนูแฮมเบอร์เกอร์บนมือถือ */}
           <div className="hidden md:block"></div>
-
           <Link href="/" className="flex items-center gap-2">
             <img src="/logo.png" alt="Logo" className="w-auto h-8" />
             <span className="font-bold text-xl hidden sm:inline-block">เช็คที่พัก</span>
           </Link>
         </div>
-
-        <nav className="hidden md:flex items-center gap-6">{/* เมนูถูกลบออกทั้งหมด */}</nav>
-
+        <nav className="hidden md:flex items-center gap-6"></nav>
         <div className="flex items-center gap-2">
-          {isLoggedIn ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <div className="h-8 w-8 rounded-full bg-teal-100 flex items-center justify-center">
-                    <User className="h-4 w-4 text-teal-600" />
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuItem asChild>
-                  <Link href="/profile">โปรไฟล์</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard">แดชบอร์ด</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/bookmarks">ที่พักที่บันทึกไว้</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    localStorage.removeItem("userType")
-                    window.location.reload()
-                  }}
-                >
-                  ออกจากระบบ
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {user ? (
+            <UserNav user={user} onLogout={handleLogout} />
           ) : (
             <>
-              <Button asChild variant="outline" className="inline-flex">
-                <Link href="/login">เข้าสู่ระบบ</Link>
-              </Button>
-              <Button asChild className="inline-flex">
-                <Link href="/register">สมัครสมาชิก</Link>
-              </Button>
+              <Link
+                href="/login"
+                onClick={() => console.log("Login clicked")}
+                className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                เข้าสู่ระบบ
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => console.log("Register clicked")}
+                className="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700"
+              >
+                สมัครสมาชิก
+              </Link>
             </>
           )}
         </div>
       </div>
     </header>
-  )
+  );
 }

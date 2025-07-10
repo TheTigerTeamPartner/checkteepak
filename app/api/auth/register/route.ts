@@ -1,80 +1,27 @@
-import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
-import { supabaseServer } from "@/lib/server" // ใช้ Service Role Key
+import { signUp } from '@/lib/auth';
+import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-    try {
-        const body = await request.json()
-        const {
-            firstName, lastName, email, phone,
-            password, confirmPassword,
-            agreeTerms, agreeNewsletter
-        } = body
+  try {
+    const { email, password, firstName, lastName, phone } = await request.json();
+    const fullName = `${firstName} ${lastName}`.trim();
 
-        // 1. ตรวจสอบความถูกต้องของข้อมูล
-        if (!firstName || !lastName || !email || !phone || !password || !confirmPassword) {
-            return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" }, { status: 400 })
-        }
+    // Use the centralized signUp function
+    const { data, error } = await signUp(email, password, fullName, phone);
 
-        if (password !== confirmPassword) {
-            return NextResponse.json({ error: "รหัสผ่านไม่ตรงกัน" }, { status: 400 })
-        }
-
-        if (!agreeTerms) {
-            return NextResponse.json({ error: "กรุณายอมรับข้อกำหนดและเงื่อนไข" }, { status: 400 })
-        }
-
-        // 2. สมัครสมาชิกผ่าน Supabase Auth
-        const { data: { user, session }, error: signUpError } = await supabaseServer.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    firstName,
-                    lastName,
-                    phone,
-                    agreeNewsletter: agreeNewsletter ?? false
-                }
-            }
-        })
-
-        if (signUpError) {
-            return NextResponse.json({ error: signUpError.message }, { status: 400 })
-        }
-
-        if (!user || !session) {
-            return NextResponse.json({ error: "ไม่สามารถสร้างผู้ใช้ได้" }, { status: 500 })
-        }
-
-        // 3. บันทึกข้อมูลลง Table users
-        const { error: insertError } = await supabaseServer.from("users").insert({
-            id: user.id,
-            email,
-            name: `${firstName} ${lastName}`,  // รวมชื่อและนามสกุลเป็นช่องเดียว
-            phone,
-            //   subscribed_newsletter: agreeNewsletter ?? false,
-            created_at: new Date().toISOString()
-        })
-
-
-        if (insertError) {
-            console.error("❌ INSERT ERROR:", insertError)
-            return NextResponse.json({ error: "สมัครสำเร็จแต่บันทึกข้อมูลไม่สำเร็จ" }, { status: 500 })
-        }
-
-        // 4. ตั้งค่า cookie สำหรับ session
-        const cookieStore = cookies()
-        cookieStore.set("sb-access-token", session.access_token, { path: "/" })
-        cookieStore.set("sb-refresh-token", session.refresh_token, { path: "/" })
-
-        // 5. Redirect ไปหน้าเลือกแพ็กเกจ
-        return NextResponse.redirect(new URL("/select-package", request.url))
-
-    } catch (error: any) {
-        console.error("❌ REGISTER ERROR:", error)
-        return NextResponse.json(
-            { error: error.message || "เกิดข้อผิดพลาดในการสมัครสมาชิก" },
-            { status: 500 }
-        )
+    if (error) {
+      // Check for a specific error message if needed, otherwise use a generic one
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      console.error('Sign up error:', errorMessage);
+      // The error might be a Supabase error object, which has a `message` property
+      return NextResponse.json({ error: `Database error saving new user: ${errorMessage}` }, { status: 400 });
     }
+
+    return NextResponse.json({ message: 'Registration successful. Please check your email to verify your account.' }, { status: 201 });
+
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'An internal server error occurred.';
+    console.error('Internal server error:', errorMessage);
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
 }
