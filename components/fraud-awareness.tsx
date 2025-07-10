@@ -135,12 +135,6 @@ export function FraudAwareness() {
                   แจ้งเหตุโกง
                 </Link>
               </Button>
-              <Button size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-50" asChild>
-                <Link href="/fraud-statistics">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  ดูสถิติการโกง
-                </Link>
-              </Button>
             </div>
           </div>
         </div>
