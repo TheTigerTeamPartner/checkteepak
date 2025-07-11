@@ -34,7 +34,7 @@ export default function Footer() {
             <h3 className="font-medium text-gray-900 mb-4">บริการของเรา</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/search" className="text-gray-600 hover:text-teal-600 text-sm">
+                <Link href="/" className="text-gray-600 hover:text-teal-600 text-sm">
                   ค้นหาที่พัก
                 </Link>
               </li>
@@ -44,12 +44,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/verify" className="text-gray-600 hover:text-teal-600 text-sm">
+                <Link href="/register" className="text-gray-600 hover:text-teal-600 text-sm">
                   ยืนยันตัวตนเจ้าของที่พัก
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="text-gray-600 hover:text-teal-600 text-sm">
+                <Link href="/coming-soon" className="text-gray-600 hover:text-teal-600 text-sm">
                   คำถามที่พบบ่อย
                 </Link>
               </li>
@@ -65,17 +65,17 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-gray-600 hover:text-teal-600 text-sm">
+                <Link href="/coming-soon" className="text-gray-600 hover:text-teal-600 text-sm">
                   นโยบายความเป็นส่วนตัว
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="text-gray-600 hover:text-teal-600 text-sm">
+                <Link href="/coming-soon" className="text-gray-600 hover:text-teal-600 text-sm">
                   ข้อกำหนดการใช้งาน
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-600 hover:text-teal-600 text-sm">
+                <Link href="/coming-soon" className="text-gray-600 hover:text-teal-600 text-sm">
                   ติดต่อเรา
                 </Link>
               </li>
