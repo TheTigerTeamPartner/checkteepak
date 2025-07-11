@@ -74,32 +74,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
-      href: "/dashboard",
-      title: "ภาพรวม",
-      icon: <LayoutDashboard className="h-5 w-5" />,
-    },
-    {
-      href: "/dashboard/profile",
+      href: `/dashboard/${user.id}/profile`,
       title: "จัดการโปรไฟล์",
       icon: <User className="h-5 w-5" />,
     },
     {
-      href: "/dashboard/verification",
+      href: `/dashboard/${user.id}/verification`,
       title: "สถานะการยืนยัน",
       icon: <CheckCircle className="h-5 w-5" />,
     },
     {
-      href: "/dashboard/settings",
+      href: `/dashboard/${user.id}/settings`,
       title: "ตั้งค่าบัญชี",
       icon: <Settings className="h-5 w-5" />,
     },
     {
-      href: "/dashboard/notifications",
+      href: `/dashboard/${user.id}/notifications`,
       title: "การแจ้งเตือน",
       icon: <Bell className="h-5 w-5" />,
     },
     {
-      href: "/dashboard/subscription",
+      href: `/dashboard/${user.id}/reports/subscription`,
       title: "การสมัครสมาชิก",
       icon: <Crown className="h-5 w-5" />,
     },
