@@ -76,8 +76,7 @@ const [loading, setLoading] = useState(true)
   const agentId = params.id
 
   useEffect(() => {
-    console.log('Fetching agent with id:', agentId)
-    
+
     if (!agentId) {
       setError('No agent ID provided')
       return
@@ -86,7 +85,7 @@ const [loading, setLoading] = useState(true)
     const fetchAgentData = async () => {
       try {
         setLoading(true)
-        console.log('Fetching from Supabase...')
+      
         
         const { data, error } = await supabase
           .from('agents')
@@ -109,11 +108,7 @@ const [loading, setLoading] = useState(true)
           setError(`No agent found with ID: ${agentId}`)
           return
         }
-
-        console.log('Successfully fetched agent:', {
-          id: data.id,
-          name: data.name
-        })
+      
         setAgentData(data)
       } catch (err) {
         console.error('Unexpected error:', err)
