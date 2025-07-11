@@ -72,7 +72,7 @@ export function RecentAccommodations() {
       const { data: agentsData, error: agentsError } = await supabase
         .from('agents')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(12)
 
       if (agentsError) {
@@ -97,10 +97,9 @@ export function RecentAccommodations() {
           user: usersData?.find(user => user.id === agent.user_id)
         }))
 
-        console.log('Combined data:', combinedData)
+        
         setAgents(combinedData)
       } else {
-        console.log('Agents:', agentsData)
         setAgents(agentsData || [])
       }
     } catch (err) {
@@ -127,6 +126,7 @@ export function RecentAccommodations() {
           </Card>
         ))}
       </div>
+    
     )
   }
 
