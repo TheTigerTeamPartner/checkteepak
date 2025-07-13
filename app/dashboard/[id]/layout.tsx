@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push("/");
     router.refresh();
   };
-    if (loading) {
+  if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>
   }
 
@@ -105,30 +105,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar for desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200">
         <div className="px-3 py-4">
-          <div className="flex items-center px-3 py-2 mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">CT</span>
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">Check Teepak</h2>
-                <p className="text-xs text-gray-500">สมาชิกยืนยัน</p>
-              </div>
-            </div>
-          </div>
+
           <SidebarNav items={memberItems} />
         </div>
 
-        {/* Bottom section */}
-        <div className="mt-auto p-3 border-t border-gray-200">
-          <Link
-            href="/"
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-          >
-            <Home className="h-5 w-5" />
-            กลับหน้าหลัก
-          </Link>
-        </div>
       </aside>
 
       <div className="flex flex-col flex-1">
