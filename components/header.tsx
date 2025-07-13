@@ -136,18 +136,20 @@ export default function Header() {
               <UserNav user={user} onLogout={handleLogout} />
             ) : (
               <>
-                <Link
-                  href="/login"
-                  className="px-3 py-1 text-sm text-gray-700 hover:underline"
-                >
-                  เข้าสู่ระบบ
-                </Link>
-                <Link
-                  href="/register"
-                  className="px-3 py-1 bg-teal-600 text-white rounded text-sm hover:bg-teal-700"
-                >
-                  สมัครสมาชิก
-                </Link>
+              <Link
+                href="/login"
+                onClick={() => console.log("Login clicked")}
+                className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                เข้าสู่ระบบ
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => console.log("Register clicked")}
+                className="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700"
+              >
+                สมัครสมาชิก
+              </Link>
               </>
             )}
           </div>
@@ -175,18 +177,20 @@ export default function Header() {
               <UserNav user={user} onLogout={handleLogout} />
             ) : (
               <>
-                <Link
-                  href="/login"
-                  className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  เข้าสู่ระบบ
-                </Link>
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700"
-                >
-                  สมัครสมาชิก
-                </Link>
+              <Link
+                href="/login"
+                onClick={() => console.log("Login clicked")}
+                className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                เข้าสู่ระบบ
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => console.log("Register clicked")}
+                className="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700"
+              >
+                สมัครสมาชิก
+              </Link>
               </>
             )}
           </div>
