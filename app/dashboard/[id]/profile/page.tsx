@@ -50,6 +50,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "@/components/ui/use-toast"
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 7fdb7a8f00744fa7c4cb999f68232346f47758e7
 export default function ProfileManagementPage() {
   const [activeTab, setActiveTab] = useState("basic")
   const [isEditing, setIsEditing] = useState(false)
@@ -103,12 +107,55 @@ export default function ProfileManagementPage() {
     })
   }
 
-  const handleSubmitForApproval = () => {
-    toast({
-      title: "ส่งขออนุมัติสำเร็จ",
-      description: "ข้อมูลของคุณได้รับการส่งไปยังผู้ดูแลระบบเพื่อตรวจสอบแล้ว",
-    })
+  const submitAgentProfile = async () => {
+    try {
+      const payload = {
+        name: `${formData.basic.firstName} ${formData.basic.lastName}`.trim(), // รวมชื่อ-นามสกุล
+        location: formData.basic.address,
+        bio: formData.basic.bio,
+        image_url: formData.basic.profileImage,
+        phone: formData.contact.phones[0]?.value || "",
+        email: formData.contact.emails[0]?.value || "",
+        line_id: formData.contact.lineIds[0]?.value || "",
+        social_facebook: formData.marketing.facebookPages[0]?.url || "",
+        instagram: formData.marketing.instagramAccounts[0]?.url || "",
+        website: formData.marketing.websites[0]?.url || "",
+        specialties: formData.basic.specialties, // สมมุติว่า column นี้เป็น `text[]` ใน Supabase
+        banking: formData.banking, // ถ้า column นี้เป็น `jsonb` ก็ส่งได้ตรงๆ
+        status: "pending", // คุณอาจระบุ status เริ่มต้น
+      }
+  
+      const res = await fetch("/api/agents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+  
+      const result = await res.json()
+  
+      if (!res.ok) {
+        throw new Error(result.error || "เกิดข้อผิดพลาดในการส่งข้อมูล")
+      }
+  
+      toast({
+        title: "ส่งขออนุมัติสำเร็จ",
+        description: "ข้อมูลของคุณถูกส่งเข้าสู่ระบบแล้ว",
+      })
+    } catch (error) {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: error instanceof Error ? error.message : "ไม่สามารถส่งข้อมูลได้",
+        variant: "destructive",
+      })
+    }
   }
+  
+  const handleSubmitForApproval = () => {
+    submitAgentProfile()
+  }
+  
 
   const handleCopyProfileLink = () => {
     navigator.clipboard.writeText(`https://checkteepak.com/agent/somchai-jaidee`)

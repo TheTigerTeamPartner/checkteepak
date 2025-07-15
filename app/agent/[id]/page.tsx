@@ -70,7 +70,7 @@ interface AgentProfile {
 
 export default function AgentProfilePage() {
   const [agentData, setAgentData] = useState<AgentProfile | null>(null)
-  const [loading, setLoading] = useState(true)
+const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const params = useParams()
   const agentId = params.id
@@ -85,8 +85,8 @@ export default function AgentProfilePage() {
     const fetchAgentData = async () => {
       try {
         setLoading(true)
-
-
+      
+        
         const { data, error } = await supabase
           .from('agents')
           .select('*')
@@ -108,7 +108,7 @@ export default function AgentProfilePage() {
           setError(`No agent found with ID: ${agentId}`)
           return
         }
-
+      
         setAgentData(data)
       } catch (err) {
         console.error('Unexpected error:', err)
@@ -141,7 +141,7 @@ export default function AgentProfilePage() {
         <div className="absolute inset-0 bg-gradient-to-r from-teal-600/30 to-blue-600/30" />
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 -mt-16 md:-mt-20 lg:-mt-24 relative z-10 pb-16">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 -mt-16 md:-mt-20 lg:-mt-24 relative z-10">
         {/* Profile Header */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8 mb-8">
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-8">
@@ -385,7 +385,7 @@ export default function AgentProfilePage() {
                     </Badge>
                   )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-blue-100">
-                    <a href={agentData?.social_facebook} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.social_facebook} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -415,7 +415,7 @@ export default function AgentProfilePage() {
                     </Badge>
                   )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-pink-100">
-                    <a href={agentData?.instagram} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.instagram} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -445,7 +445,7 @@ export default function AgentProfilePage() {
                     </Badge>
                   )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-gray-100">
-                    <a href={agentData?.website} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.website} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>

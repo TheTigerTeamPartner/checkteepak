@@ -55,79 +55,26 @@ export function SearchBar() {
     { value: "name", label: "ชื่อ-นามสกุล", icon: <User className="h-4 w-4" /> },
     { value: "business", label: "ชื่อธุรกิจ", icon: <Building className="h-4 w-4" /> },
   ]
-
-  // Mock data สำหรับผลการค้นหา
-  const mockResults: SearchResult[] = [
-    {
-      id: "1",
-      searchTerm: "081-234-5678",
-      searchType: "phone",
-      status: "verified",
-      name: "คุณสมชาย ใจดี",
-      details: [
-        "ยืนยันตัวตนแล้วเมื่อ 15 พ.ค. 2566",
-        "เป็นเจ้าของที่พักรับรองใน 3 จังหวัด",
-        "มีประวัติการทำธุรกรรมที่ดี",
-        "ไม่มีรายงานการโกงหรือหลอกลวง",
-      ],
-      riskLevel: "low",
-      lastUpdated: "2 ชั่วโมงที่แล้ว",
-      reportCount: 0,
-      verificationDate: "15 พฤษภาคม 2566",
-    },
-    {
-      id: "2",
-      searchTerm: "123-4-56789-0",
-      searchType: "bank_account",
-      status: "unknown",
-      details: [
-        "ไม่พบข้อมูลในระบบของเรา",
-        "บัญชีนี้อาจเป็นบัญชีใหม่หรือไม่เคยมีการรายงาน",
-        "แนะนำให้ตรวจสอบเพิ่มเติมก่อนโอนเงิน",
-        "ขอดูเอกสารยืนยันตัวตนจากเจ้าของบัญชี",
-      ],
-      riskLevel: "medium",
-      lastUpdated: "1 วันที่แล้ว",
-      reportCount: 0,
-    },
-    {
-      id: "3",
-      searchTerm: "1-2345-67890-12-3",
-      searchType: "id_card",
-      status: "fraud",
-      name: "นายปลอม หลอกลวง",
-      details: [
-        "มีรายงานการหลอกลวงหลายครั้ง",
-        "ใช้ข้อมูลปลอมในการทำธุรกรรม",
-        "มีประวัติโกงเงินค่าที่พักหลายราย",
-        "อย่าทำธุรกรรมใดๆ กับบุคคลนี้",
-      ],
-      riskLevel: "high",
-      lastUpdated: "30 นาทีที่แล้ว",
-      reportCount: 15,
-      verificationDate: "ถูกรายงานเมื่อ 10 พฤษภาคม 2566",
-    },
-  ]
-
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (searchTerm.trim()) {
       setIsSearching(true)
 
-      // Simulate API call
-      setTimeout(() => {
-        // Filter mock results based on search term
-        const filteredResults = mockResults.filter(
-          (result) =>
-            result.searchTerm.includes(searchTerm) ||
-            result.name?.includes(searchTerm) ||
-            searchTerm.includes(result.searchTerm),
-        )
+      try {
+        // Fetch real data from API
+        const response = await fetch(`/api/search?type=${searchType}&term=${searchTerm}`);
+        const data = await response.json();
+        const filteredResults = data.results || []; 
 
         setSearchResults(filteredResults.length > 0 ? filteredResults : [])
         setIsSearching(false)
         setIsResultDialogOpen(true)
-      }, 1500)
+      } catch (error) {
+        console.error("Error fetching search results:", error);
+        setSearchResults([])
+        setIsSearching(false)
+        setIsResultDialogOpen(true)
+      }
     }
   }
 

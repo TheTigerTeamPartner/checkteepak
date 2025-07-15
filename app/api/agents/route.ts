@@ -1,10 +1,13 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
 export async function GET(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
 
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -12,30 +15,34 @@ export async function GET(request: NextRequest) {
 
   try {
     const { data, error } = await supabase
-      .from('agents')
-      .select('*')
-      .eq('id', session.user.id)
+      .from("agents")
+      .select("*")
+      .eq("id", session.user.id)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // This means no agent profile was found for the user, which is not an error.
+      if (error.code === "PGRST116") {
+        // Not found but not an error
         return NextResponse.json({ data: null });
       }
-      // For other errors, return the error message.
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json({ data });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
 
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -43,30 +50,29 @@ export async function POST(request: NextRequest) {
 
   const agentData = await request.json();
 
-  // Force the agent ID to match the logged-in user's ID for security.
+
   const dataToUpsert = {
     ...agentData,
-    id: session.user.id, // This is the primary key and FK to users table.
-    user_id: session.user.id, // Ensure user_id is also set.
+    id: session.user.id,
+    user_id: session.user.id,
   };
 
   try {
     const { data, error } = await supabase
-      .from('agents')
-      .upsert(dataToUpsert, { onConflict: 'id' })
+      .from("agents")
+      .upsert(dataToUpsert, { onConflict: "id" })
       .select()
       .single();
 
     if (error) {
-      console.error('Supabase agent upsert error:', error);
+
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ data }, { status: 200 }); // Return 200 for upsert
-
+    return NextResponse.json({ data }, { status: 200 });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    console.error('Catch block error:', errorMessage);
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
