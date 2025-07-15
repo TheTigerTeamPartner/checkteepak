@@ -50,10 +50,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "@/components/ui/use-toast"
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 7fdb7a8f00744fa7c4cb999f68232346f47758e7
 export default function ProfileManagementPage() {
   const [activeTab, setActiveTab] = useState("basic")
   const [isEditing, setIsEditing] = useState(false)
