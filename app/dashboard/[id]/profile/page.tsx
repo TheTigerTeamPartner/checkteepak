@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,105 +48,44 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "@/components/ui/use-toast"
 
-// Mock data
-const profileData = {
-  basic: {
-    firstName: "สมชาย",
-    lastName: "ใจดี",
-    profileImage: "/placeholder.svg?height=150&width=150&text=สมชาย",
-    coverImage: "/placeholder.svg?height=300&width=800&text=Cover",
-    address: "123 ถนนสุขุมวิท แขวงคลองตัน เขตคลองตัน กรุงเทพมหานคร 10110",
-    bio: "นายหน้าอสังหาริมทรัพย์มืออาชีพ ประสบการณ์กว่า 10 ปี เชี่ยวชาญด้านคอนโดมิเนียมและบ้านเดี่ยวในเขตกรุงเทพฯ",
-    specialties: ["คอนโดมิเนียม", "บ้านเดี่ยว", "ทาวน์เฮาส์", "อสังหาฯ เพื่อการลงทุน"],
-  },
-  contact: {
-    phone: "081-234-5678",
-    email: "somchai@example.com",
-    lineId: "somchai_agent",
-  },
-  marketing: {
-    facebook: "https://facebook.com/somchai.agent",
-    instagram: "https://instagram.com/somchai_agent",
-    lineOA: "@somchai_agent",
-    website: "https://somchai-agent.com",
-  },
-  banking: [
-    {
-      id: 1,
-      bankName: "ธนาคารกสิกรไทย",
-      accountNumber: "123-4-56789-0",
-      accountName: "นายสมชาย ใจดี",
-      isPrimary: true,
-    },
-  ],
-  visibility: {
-    showPhone: true,
-    showEmail: true,
-    showLineId: true,
-    showFacebook: true,
-    showInstagram: true,
-    showLineOA: true,
-    showWebsite: true,
-    showBanking: false,
-  },
-  pendingApprovals: [
-    {
-      id: 1,
-      type: "contact",
-      field: "phone",
-      oldValue: "081-234-5678",
-      newValue: "082-345-6789",
-      status: "pending",
-      submittedAt: "2024-01-15T10:30:00Z",
-    },
-    {
-      id: 2,
-      type: "marketing",
-      field: "website",
-      oldValue: "https://somchai-agent.com",
-      newValue: "https://new-somchai-agent.com",
-      status: "approved",
-      submittedAt: "2024-01-14T15:20:00Z",
-      approvedAt: "2024-01-15T09:15:00Z",
-    },
-    {
-      id: 3,
-      type: "basic",
-      field: "bio",
-      oldValue: "นายหน้าอสังหาริมทรัพย์มืออาชีพ",
-      newValue: "นายหน้าอสังหาริมทรัพย์มืออาชีพ ประสบการณ์กว่า 15 ปี",
-      status: "rejected",
-      submittedAt: "2024-01-13T14:10:00Z",
-      rejectedAt: "2024-01-14T11:30:00Z",
-      rejectionReason: "ข้อมูลประสบการณ์ไม่ตรงกับเอกสารที่ยื่น",
-    },
-  ],
-}
-
 export default function ProfileManagementPage() {
   const [activeTab, setActiveTab] = useState("basic")
   const [isEditing, setIsEditing] = useState(false)
   // Update the formData structure to include arrays for multiple contact methods
   const [formData, setFormData] = useState({
-    ...profileData,
+    basic: {
+      firstName: "",
+      lastName: "",
+      profileImage: "",
+      coverImage: "",
+      address: "",
+      bio: "",
+      specialties: [],
+    },
     contact: {
-      ...profileData.contact,
-      phones: profileData.contact.phone ? [{ value: profileData.contact.phone, verified: false, id: 1 }] : [],
-      emails: profileData.contact.email ? [{ value: profileData.contact.email, verified: false, id: 1 }] : [],
-      lineIds: profileData.contact.lineId ? [{ value: profileData.contact.lineId, verified: false, id: 1 }] : [],
+      phones: [],
+      emails: [],
+      lineIds: [],
     },
     marketing: {
-      ...profileData.marketing,
-      facebookPages: profileData.marketing.facebook
-        ? [{ url: profileData.marketing.facebook, verified: false, id: 1 }]
-        : [],
-      instagramAccounts: profileData.marketing.instagram
-        ? [{ url: profileData.marketing.instagram, verified: false, id: 1 }]
-        : [],
-      lineOAs: profileData.marketing.lineOA ? [{ value: profileData.marketing.lineOA, verified: false, id: 1 }] : [],
-      websites: profileData.marketing.website ? [{ url: profileData.marketing.website, verified: false, id: 1 }] : [],
+      facebookPages: [],
+      instagramAccounts: [],
+      lineOAs: [],
+      websites: [],
       otherChannels: [],
     },
+    banking: [],
+    visibility: {
+      showPhone: true,
+      showEmail: true,
+      showLineId: true,
+      showFacebook: true,
+      showInstagram: true,
+      showLineOA: true,
+      showWebsite: true,
+      showBanking: false,
+    },
+    pendingApprovals: [],
   })
   const [newSpecialty, setNewSpecialty] = useState("")
   const [newMarketingChannel, setNewMarketingChannel] = useState({ type: "", url: "" })
@@ -164,11 +102,53 @@ export default function ProfileManagementPage() {
     })
   }
 
+  const submitAgentProfile = async () => {
+    try {
+      const payload = {
+        name: `${formData.basic.firstName} ${formData.basic.lastName}`.trim(), // รวมชื่อ-นามสกุล
+        location: formData.basic.address,
+        bio: formData.basic.bio,
+        image_url: formData.basic.profileImage,
+        phone: formData.contact.phones[0]?.value || "",
+        email: formData.contact.emails[0]?.value || "",
+        line_id: formData.contact.lineIds[0]?.value || "",
+        social_facebook: formData.marketing.facebookPages[0]?.url || "",
+        instagram: formData.marketing.instagramAccounts[0]?.url || "",
+        website: formData.marketing.websites[0]?.url || "",
+        specialties: formData.basic.specialties, // สมมุติว่า column นี้เป็น `text[]` ใน Supabase
+        banking: formData.banking, // ถ้า column นี้เป็น `jsonb` ก็ส่งได้ตรงๆ
+        status: "pending", // คุณอาจระบุ status เริ่มต้น
+      }
+
+      const res = await fetch("/api/agents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(result.error || "เกิดข้อผิดพลาดในการส่งข้อมูล")
+      }
+
+      toast({
+        title: "ส่งขออนุมัติสำเร็จ",
+        description: "ข้อมูลของคุณถูกส่งเข้าสู่ระบบแล้ว",
+      })
+    } catch (error) {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: error instanceof Error ? error.message : "ไม่สามารถส่งข้อมูลได้",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleSubmitForApproval = () => {
-    toast({
-      title: "ส่งขออนุมัติสำเร็จ",
-      description: "ข้อมูลของคุณได้รับการส่งไปยังผู้ดูแลระบบเพื่อตรวจสอบแล้ว",
-    })
+    submitAgentProfile()
   }
 
   const handleCopyProfileLink = () => {
@@ -337,9 +317,8 @@ export default function ProfileManagementPage() {
                     </Button>
                   </div>
                 </div>
-
                 <div>
-                  <Label className="text-base font-medium">รูปปก</Label>
+                  <Label className="text-base font-medium">รูปภาพหน้าปก</Label>
                   <div className="mt-2">
                     <div className="relative w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
                       <img
@@ -357,9 +336,7 @@ export default function ProfileManagementPage() {
                   </div>
                 </div>
               </div>
-
               <Separator />
-
               {/* Personal Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -389,7 +366,6 @@ export default function ProfileManagementPage() {
                   />
                 </div>
               </div>
-
               <div>
                 <Label htmlFor="address">ที่อยู่</Label>
                 <Textarea
@@ -404,7 +380,6 @@ export default function ProfileManagementPage() {
                   rows={3}
                 />
               </div>
-
               <div>
                 <Label htmlFor="bio">การแนะนำตัว</Label>
                 <Textarea
@@ -420,7 +395,6 @@ export default function ProfileManagementPage() {
                   placeholder="แนะนำตัวคุณให้ลูกค้าได้รู้จัก..."
                 />
               </div>
-
               {/* Specialties */}
               <div>
                 <Label className="text-base font-medium">ความเชี่ยวชาญ</Label>
@@ -486,67 +460,58 @@ export default function ProfileManagementPage() {
                     <Plus className="w-4 h-4 mr-1" /> เพิ่มเบอร์โทรศัพท์
                   </Button>
                 </div>
-
                 {/* List of phone numbers */}
                 <div className="space-y-3">
-                  {(formData.contact.phones || [{ value: formData.contact.phone, verified: false, id: 1 }]).map(
-                    (phone, index) => (
-                      <div key={phone.id || index} className="flex items-center gap-2">
-                        <Input
-                          value={phone.value}
-                          onChange={(e) => {
-                            const updatedPhones = [
-                              ...(formData.contact.phones || [
-                                { value: formData.contact.phone, verified: false, id: 1 },
-                              ]),
-                            ]
-                            updatedPhones[index].value = e.target.value
-                            setFormData((prev) => ({
-                              ...prev,
-                              contact: {
-                                ...prev.contact,
-                                phones: updatedPhones,
-                              },
-                            }))
-                          }}
-                          placeholder="เบอร์โทรศัพท์"
-                          className="flex-1"
-                        />
-                        {phone.verified ? (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            ยืนยันแล้ว
-                          </Badge>
-                        ) : (
-                          <Button variant="outline" size="sm">
-                            ยืนยัน OTP
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 px-2"
-                          onClick={() => {
-                            const updatedPhones = (formData.contact.phones || []).filter((_, i) => i !== index)
-                            setFormData((prev) => ({
-                              ...prev,
-                              contact: {
-                                ...prev.contact,
-                                phones: updatedPhones,
-                              },
-                            }))
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
+                  {(formData.contact.phones || []).map((phone, index) => (
+                    <div key={phone.id || index} className="flex items-center gap-2">
+                      <Input
+                        value={phone.value}
+                        onChange={(e) => {
+                          const updatedPhones = [...(formData.contact.phones || [])]
+                          updatedPhones[index].value = e.target.value
+                          setFormData((prev) => ({
+                            ...prev,
+                            contact: {
+                              ...prev.contact,
+                              phones: updatedPhones,
+                            },
+                          }))
+                        }}
+                        placeholder="เบอร์โทรศัพท์"
+                        className="flex-1"
+                      />
+                      {phone.verified ? (
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          ยืนยันแล้ว
+                        </Badge>
+                      ) : (
+                        <Button variant="outline" size="sm">
+                          ยืนยัน OTP
                         </Button>
-                      </div>
-                    ),
-                  )}
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 px-2"
+                        onClick={() => {
+                          const updatedPhones = (formData.contact.phones || []).filter((_, i) => i !== index)
+                          setFormData((prev) => ({
+                            ...prev,
+                            contact: {
+                              ...prev.contact,
+                              phones: updatedPhones,
+                            },
+                          }))
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </div>
-
               <Separator />
-
               {/* Email Addresses */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -570,68 +535,59 @@ export default function ProfileManagementPage() {
                     <Plus className="w-4 h-4 mr-1" /> เพิ่มอีเมล
                   </Button>
                 </div>
-
                 {/* List of emails */}
                 <div className="space-y-3">
-                  {(formData.contact.emails || [{ value: formData.contact.email, verified: false, id: 1 }]).map(
-                    (email, index) => (
-                      <div key={email.id || index} className="flex items-center gap-2">
-                        <Input
-                          type="email"
-                          value={email.value}
-                          onChange={(e) => {
-                            const updatedEmails = [
-                              ...(formData.contact.emails || [
-                                { value: formData.contact.email, verified: false, id: 1 },
-                              ]),
-                            ]
-                            updatedEmails[index].value = e.target.value
-                            setFormData((prev) => ({
-                              ...prev,
-                              contact: {
-                                ...prev.contact,
-                                emails: updatedEmails,
-                              },
-                            }))
-                          }}
-                          placeholder="อีเมล"
-                          className="flex-1"
-                        />
-                        {email.verified ? (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            ยืนยันแล้ว
-                          </Badge>
-                        ) : (
-                          <Button variant="outline" size="sm">
-                            ส่งลิงก์ยืนยัน
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 px-2"
-                          onClick={() => {
-                            const updatedEmails = (formData.contact.emails || []).filter((_, i) => i !== index)
-                            setFormData((prev) => ({
-                              ...prev,
-                              contact: {
-                                ...prev.contact,
-                                emails: updatedEmails,
-                              },
-                            }))
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
+                  {(formData.contact.emails || []).map((email, index) => (
+                    <div key={email.id || index} className="flex items-center gap-2">
+                      <Input
+                        type="email"
+                        value={email.value}
+                        onChange={(e) => {
+                          const updatedEmails = [...(formData.contact.emails || [])]
+                          updatedEmails[index].value = e.target.value
+                          setFormData((prev) => ({
+                            ...prev,
+                            contact: {
+                              ...prev.contact,
+                              emails: updatedEmails,
+                            },
+                          }))
+                        }}
+                        placeholder="อีเมล"
+                        className="flex-1"
+                      />
+                      {email.verified ? (
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          ยืนยันแล้ว
+                        </Badge>
+                      ) : (
+                        <Button variant="outline" size="sm">
+                          ส่งลิงก์ยืนยัน
                         </Button>
-                      </div>
-                    ),
-                  )}
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 px-2"
+                        onClick={() => {
+                          const updatedEmails = (formData.contact.emails || []).filter((_, i) => i !== index)
+                          setFormData((prev) => ({
+                            ...prev,
+                            contact: {
+                              ...prev.contact,
+                              emails: updatedEmails,
+                            },
+                          }))
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </div>
-
               <Separator />
-
               {/* Line IDs */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -655,70 +611,62 @@ export default function ProfileManagementPage() {
                     <Plus className="w-4 h-4 mr-1" /> เพิ่ม Line ID
                   </Button>
                 </div>
-
                 {/* List of Line IDs */}
                 <div className="space-y-3">
-                  {(formData.contact.lineIds || [{ value: formData.contact.lineId, verified: false, id: 1 }]).map(
-                    (lineId, index) => (
-                      <div key={lineId.id || index} className="flex items-center gap-2">
-                        <Input
-                          value={lineId.value}
-                          onChange={(e) => {
-                            const updatedLineIds = [
-                              ...(formData.contact.lineIds || [
-                                { value: formData.contact.lineId, verified: false, id: 1 },
-                              ]),
-                            ]
-                            updatedLineIds[index].value = e.target.value
-                            setFormData((prev) => ({
-                              ...prev,
-                              contact: {
-                                ...prev.contact,
-                                lineIds: updatedLineIds,
-                              },
-                            }))
-                          }}
-                          placeholder="Line ID"
-                          className="flex-1"
-                        />
-                        {lineId.verified ? (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            ยืนยันแล้ว
-                          </Badge>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm">
-                              ยืนยัน
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Upload className="w-4 h-4 mr-1" /> แนบหลักฐาน
-                            </Button>
-                          </div>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 px-2"
-                          onClick={() => {
-                            const updatedLineIds = (formData.contact.lineIds || []).filter((_, i) => i !== index)
-                            setFormData((prev) => ({
-                              ...prev,
-                              contact: {
-                                ...prev.contact,
-                                lineIds: updatedLineIds,
-                              },
-                            }))
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ),
-                  )}
+                  {(formData.contact.lineIds || []).map((lineId, index) => (
+                    <div key={lineId.id || index} className="flex items-center gap-2">
+                      <Input
+                        value={lineId.value}
+                        onChange={(e) => {
+                          const updatedLineIds = [...(formData.contact.lineIds || [])]
+                          updatedLineIds[index].value = e.target.value
+                          setFormData((prev) => ({
+                            ...prev,
+                            contact: {
+                              ...prev.contact,
+                              lineIds: updatedLineIds,
+                            },
+                          }))
+                        }}
+                        placeholder="Line ID"
+                        className="flex-1"
+                      />
+                      {lineId.verified ? (
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          ยืนยันแล้ว
+                        </Badge>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm">
+                            ยืนยัน
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Upload className="w-4 h-4 mr-1" /> แนบหลักฐาน
+                          </Button>
+                        </div>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 px-2"
+                        onClick={() => {
+                          const updatedLineIds = (formData.contact.lineIds || []).filter((_, i) => i !== index)
+                          setFormData((prev) => ({
+                            ...prev,
+                            contact: {
+                              ...prev.contact,
+                              lineIds: updatedLineIds,
+                            },
+                          }))
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </div>
-
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -774,21 +722,14 @@ export default function ProfileManagementPage() {
                     <Plus className="w-4 h-4 mr-1" /> เพิ่ม Facebook Page
                   </Button>
                 </div>
-
                 {/* List of Facebook Pages */}
                 <div className="space-y-3">
-                  {(
-                    formData.marketing.facebookPages || [{ url: formData.marketing.facebook, verified: false, id: 1 }]
-                  ).map((page, index) => (
+                  {(formData.marketing.facebookPages || []).map((page, index) => (
                     <div key={page.id || index} className="flex items-center gap-2">
                       <Input
                         value={page.url}
                         onChange={(e) => {
-                          const updatedPages = [
-                            ...(formData.marketing.facebookPages || [
-                              { url: formData.marketing.facebook, verified: false, id: 1 },
-                            ]),
-                          ]
+                          const updatedPages = [...(formData.marketing.facebookPages || [])]
                           updatedPages[index].url = e.target.value
                           setFormData((prev) => ({
                             ...prev,
@@ -832,9 +773,7 @@ export default function ProfileManagementPage() {
                   ))}
                 </div>
               </div>
-
               <Separator />
-
               {/* Instagram Accounts */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -861,23 +800,14 @@ export default function ProfileManagementPage() {
                     <Plus className="w-4 h-4 mr-1" /> เพิ่ม Instagram
                   </Button>
                 </div>
-
                 {/* List of Instagram Accounts */}
                 <div className="space-y-3">
-                  {(
-                    formData.marketing.instagramAccounts || [
-                      { url: formData.marketing.instagram, verified: false, id: 1 },
-                    ]
-                  ).map((account, index) => (
+                  {(formData.marketing.instagramAccounts || []).map((account, index) => (
                     <div key={account.id || index} className="flex items-center gap-2">
                       <Input
                         value={account.url}
                         onChange={(e) => {
-                          const updatedAccounts = [
-                            ...(formData.marketing.instagramAccounts || [
-                              { url: formData.marketing.instagram, verified: false, id: 1 },
-                            ]),
-                          ]
+                          const updatedAccounts = [...(formData.marketing.instagramAccounts || [])]
                           updatedAccounts[index].url = e.target.value
                           setFormData((prev) => ({
                             ...prev,
@@ -923,9 +853,7 @@ export default function ProfileManagementPage() {
                   ))}
                 </div>
               </div>
-
               <Separator />
-
               {/* Line OA */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -949,67 +877,58 @@ export default function ProfileManagementPage() {
                     <Plus className="w-4 h-4 mr-1" /> เพิ่ม Line OA
                   </Button>
                 </div>
-
                 {/* List of Line OAs */}
                 <div className="space-y-3">
-                  {(formData.marketing.lineOAs || [{ value: formData.marketing.lineOA, verified: false, id: 1 }]).map(
-                    (lineOA, index) => (
-                      <div key={lineOA.id || index} className="flex items-center gap-2">
-                        <Input
-                          value={lineOA.value}
-                          onChange={(e) => {
-                            const updatedLineOAs = [
-                              ...(formData.marketing.lineOAs || [
-                                { value: formData.marketing.lineOA, verified: false, id: 1 },
-                              ]),
-                            ]
-                            updatedLineOAs[index].value = e.target.value
-                            setFormData((prev) => ({
-                              ...prev,
-                              marketing: {
-                                ...prev.marketing,
-                                lineOAs: updatedLineOAs,
-                              },
-                            }))
-                          }}
-                          placeholder="@your-line-oa"
-                          className="flex-1"
-                        />
-                        {lineOA.verified ? (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            ยืนยันแล้ว
-                          </Badge>
-                        ) : (
-                          <Button variant="outline" size="sm">
-                            <Upload className="w-4 h-4 mr-1" /> แนบหลักฐาน
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 px-2"
-                          onClick={() => {
-                            const updatedLineOAs = (formData.marketing.lineOAs || []).filter((_, i) => i !== index)
-                            setFormData((prev) => ({
-                              ...prev,
-                              marketing: {
-                                ...prev.marketing,
-                                lineOAs: updatedLineOAs,
-                              },
-                            }))
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
+                  {(formData.marketing.lineOAs || []).map((lineOA, index) => (
+                    <div key={lineOA.id || index} className="flex items-center gap-2">
+                      <Input
+                        value={lineOA.value}
+                        onChange={(e) => {
+                          const updatedLineOAs = [...(formData.marketing.lineOAs || [])]
+                          updatedLineOAs[index].value = e.target.value
+                          setFormData((prev) => ({
+                            ...prev,
+                            marketing: {
+                              ...prev.marketing,
+                              lineOAs: updatedLineOAs,
+                            },
+                          }))
+                        }}
+                        placeholder="@your-line-oa"
+                        className="flex-1"
+                      />
+                      {lineOA.verified ? (
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          ยืนยันแล้ว
+                        </Badge>
+                      ) : (
+                        <Button variant="outline" size="sm">
+                          <Upload className="w-4 h-4 mr-1" /> แนบหลักฐาน
                         </Button>
-                      </div>
-                    ),
-                  )}
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 px-2"
+                        onClick={() => {
+                          const updatedLineOAs = (formData.marketing.lineOAs || []).filter((_, i) => i !== index)
+                          setFormData((prev) => ({
+                            ...prev,
+                            marketing: {
+                              ...prev.marketing,
+                              lineOAs: updatedLineOAs,
+                            },
+                          }))
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </div>
-
               <Separator />
-
               {/* Websites */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -1033,67 +952,58 @@ export default function ProfileManagementPage() {
                     <Plus className="w-4 h-4 mr-1" /> เพิ่มเว็บไซต์
                   </Button>
                 </div>
-
                 {/* List of Websites */}
                 <div className="space-y-3">
-                  {(formData.marketing.websites || [{ url: formData.marketing.website, verified: false, id: 1 }]).map(
-                    (website, index) => (
-                      <div key={website.id || index} className="flex items-center gap-2">
-                        <Input
-                          value={website.url}
-                          onChange={(e) => {
-                            const updatedWebsites = [
-                              ...(formData.marketing.websites || [
-                                { url: formData.marketing.website, verified: false, id: 1 },
-                              ]),
-                            ]
-                            updatedWebsites[index].url = e.target.value
-                            setFormData((prev) => ({
-                              ...prev,
-                              marketing: {
-                                ...prev.marketing,
-                                websites: updatedWebsites,
-                              },
-                            }))
-                          }}
-                          placeholder="https://your-website.com"
-                          className="flex-1"
-                        />
-                        {website.verified ? (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            ยืนยันแล้ว
-                          </Badge>
-                        ) : (
-                          <Button variant="outline" size="sm">
-                            <Upload className="w-4 h-4 mr-1" /> แนบหลักฐาน
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 px-2"
-                          onClick={() => {
-                            const updatedWebsites = (formData.marketing.websites || []).filter((_, i) => i !== index)
-                            setFormData((prev) => ({
-                              ...prev,
-                              marketing: {
-                                ...prev.marketing,
-                                websites: updatedWebsites,
-                              },
-                            }))
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
+                  {(formData.marketing.websites || []).map((website, index) => (
+                    <div key={website.id || index} className="flex items-center gap-2">
+                      <Input
+                        value={website.url}
+                        onChange={(e) => {
+                          const updatedWebsites = [...(formData.marketing.websites || [])]
+                          updatedWebsites[index].url = e.target.value
+                          setFormData((prev) => ({
+                            ...prev,
+                            marketing: {
+                              ...prev.marketing,
+                              websites: updatedWebsites,
+                            },
+                          }))
+                        }}
+                        placeholder="https://your-website.com"
+                        className="flex-1"
+                      />
+                      {website.verified ? (
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          ยืนยันแล้ว
+                        </Badge>
+                      ) : (
+                        <Button variant="outline" size="sm">
+                          <Upload className="w-4 h-4 mr-1" /> แนบหลักฐาน
                         </Button>
-                      </div>
-                    ),
-                  )}
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 px-2"
+                        onClick={() => {
+                          const updatedWebsites = (formData.marketing.websites || []).filter((_, i) => i !== index)
+                          setFormData((prev) => ({
+                            ...prev,
+                            marketing: {
+                              ...prev.marketing,
+                              websites: updatedWebsites,
+                            },
+                          }))
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </div>
-
               <Separator />
-
               {/* Other Marketing Channels */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -1117,7 +1027,6 @@ export default function ProfileManagementPage() {
                     <Plus className="w-4 h-4 mr-1" /> เพิ่มช่องทาง
                   </Button>
                 </div>
-
                 {/* List of Other Channels */}
                 <div className="space-y-3">
                   {(formData.marketing.otherChannels || []).map((channel, index) => (
@@ -1194,7 +1103,6 @@ export default function ProfileManagementPage() {
                   ))}
                 </div>
               </div>
-
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -1282,9 +1190,7 @@ export default function ProfileManagementPage() {
                   </Card>
                 ))}
               </div>
-
               <Separator />
-
               {/* Add New Bank Account */}
               <div>
                 <Label className="text-base font-medium">เพิ่มบัญชีธนาคารใหม่</Label>
@@ -1387,9 +1293,7 @@ export default function ProfileManagementPage() {
                   </div>
                 </div>
               </div>
-
               <Separator />
-
               {/* Marketing Channels Visibility */}
               <div>
                 <h3 className="font-medium mb-4">ช่องทางการตลาด</h3>
@@ -1456,27 +1360,34 @@ export default function ProfileManagementPage() {
                   </div>
                 </div>
               </div>
-
               <Separator />
-
               {/* Banking Visibility */}
               <div>
                 <h3 className="font-medium mb-4">ข้อมูลการเงิน</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="w-4 h-4" />
-                      <span>ข้อมูลบัญชีธนาคาร</span>
-                    </div>
-                    <Switch
-                      checked={formData.visibility.showBanking}
-                      onCheckedChange={(checked) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          visibility: { ...prev.visibility, showBanking: checked },
-                        }))
-                      }
-                    />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" />
+                    <span>ข้อมูลบัญชีธนาคาร</span>
+                  </div>
+                  <Switch
+                    checked={formData.visibility.showBanking}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        visibility: { ...prev.visibility, showBanking: checked },
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-800">การแสดงผลโปรไฟล์</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      การตั้งค่าเหล่านี้จะกำหนดว่าข้อมูลส่วนใดของคุณจะถูกแสดงต่อสาธารณะบนโปรไฟล์ของคุณ
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1492,62 +1403,37 @@ export default function ProfileManagementPage() {
                 <CheckCircle className="w-5 h-5" />
                 สถานะการอนุมัติ
               </CardTitle>
-              <CardDescription>ติดตามสถานะการอนุมัติข้อมูลที่คุณส่งไป</CardDescription>
+              <CardDescription>ตรวจสอบสถานะการอนุมัติข้อมูลโปรไฟล์ของคุณ</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {formData.pendingApprovals.map((item) => (
-                  <Card key={item.id} className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {item.type === "contact" && "ข้อมูลติดต่อ"}
-                            {item.type === "marketing" && "ช่องทางการตลาด"}
-                            {item.type === "basic" && "ข้อมูลพื้นฐาน"}
-                          </span>
-                          <span className="text-gray-500">- {item.field}</span>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          <p>
-                            <span className="font-medium">เดิม:</span> {item.oldValue}
-                          </p>
-                          <p>
-                            <span className="font-medium">ใหม่:</span> {item.newValue}
-                          </p>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          ส่งเมื่อ:{" "}
-                          {new Date(item.submittedAt).toLocaleDateString("th-TH", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
-                        {item.status === "rejected" && item.rejectionReason && (
-                          <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                            <span className="font-medium">เหตุผลที่ไม่อนุมัติ:</span> {item.rejectionReason}
-                          </div>
-                        )}
+            <CardContent className="space-y-6">
+              {formData.pendingApprovals.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  <p>ยังไม่มีรายการรอการอนุมัติ</p>
+                  <p className="mt-2">ข้อมูลโปรไฟล์ของคุณเป็นปัจจุบันแล้ว</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {formData.pendingApprovals.map((item, index) => (
+                    <Card key={index} className="flex items-center justify-between p-4">
+                      <div>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-gray-600">{item.description}</p>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        {getStatusBadge(item.status)}
-                        {item.status === "rejected" && (
-                          <Button variant="outline" size="sm">
-                            <Edit className="w-3 h-3 mr-1" />
-                            แก้ไขใหม่
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-
-                {formData.pendingApprovals.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">ไม่มีข้อมูลที่รอการอนุมัติ</div>
-                )}
+                      {getStatusBadge(item.status)}
+                    </Card>
+                  ))}
+                </div>
+              )}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-800">กระบวนการอนุมัติ</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      ข้อมูลบางส่วนที่คุณแก้ไขอาจต้องได้รับการตรวจสอบและอนุมัติโดยผู้ดูแลระบบก่อนที่จะแสดงผลบนโปรไฟล์สาธารณะของคุณ
+                    </p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1555,14 +1441,14 @@ export default function ProfileManagementPage() {
       </Tabs>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t">
-        <Button onClick={handleSaveDraft} variant="outline" className="flex-1">
+      <div className="flex justify-end gap-3">
+        <Button variant="outline" onClick={handleSaveDraft}>
           <Save className="w-4 h-4 mr-2" />
           บันทึกร่าง
         </Button>
-        <Button onClick={handleSubmitForApproval} className="flex-1">
+        <Button onClick={handleSubmitForApproval}>
           <Send className="w-4 h-4 mr-2" />
-          ส่งขออนุมัติ
+          ส่งเพื่อขออนุมัติ
         </Button>
       </div>
     </div>
