@@ -213,6 +213,7 @@ export async function updateReport(id: string, updates: Partial<Report>) {
   }
 }
 
+
 // Statistics
 export async function getStatistics() {
   try {
