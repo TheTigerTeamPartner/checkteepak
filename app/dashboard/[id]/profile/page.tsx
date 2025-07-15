@@ -49,105 +49,45 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "@/components/ui/use-toast"
 
-// Mock data
-const profileData = {
-  basic: {
-    firstName: "สมชาย",
-    lastName: "ใจดี",
-    profileImage: "/placeholder.svg?height=150&width=150&text=สมชาย",
-    coverImage: "/placeholder.svg?height=300&width=800&text=Cover",
-    address: "123 ถนนสุขุมวิท แขวงคลองตัน เขตคลองตัน กรุงเทพมหานคร 10110",
-    bio: "นายหน้าอสังหาริมทรัพย์มืออาชีพ ประสบการณ์กว่า 10 ปี เชี่ยวชาญด้านคอนโดมิเนียมและบ้านเดี่ยวในเขตกรุงเทพฯ",
-    specialties: ["คอนโดมิเนียม", "บ้านเดี่ยว", "ทาวน์เฮาส์", "อสังหาฯ เพื่อการลงทุน"],
-  },
-  contact: {
-    phone: "081-234-5678",
-    email: "somchai@example.com",
-    lineId: "somchai_agent",
-  },
-  marketing: {
-    facebook: "https://facebook.com/somchai.agent",
-    instagram: "https://instagram.com/somchai_agent",
-    lineOA: "@somchai_agent",
-    website: "https://somchai-agent.com",
-  },
-  banking: [
-    {
-      id: 1,
-      bankName: "ธนาคารกสิกรไทย",
-      accountNumber: "123-4-56789-0",
-      accountName: "นายสมชาย ใจดี",
-      isPrimary: true,
-    },
-  ],
-  visibility: {
-    showPhone: true,
-    showEmail: true,
-    showLineId: true,
-    showFacebook: true,
-    showInstagram: true,
-    showLineOA: true,
-    showWebsite: true,
-    showBanking: false,
-  },
-  pendingApprovals: [
-    {
-      id: 1,
-      type: "contact",
-      field: "phone",
-      oldValue: "081-234-5678",
-      newValue: "082-345-6789",
-      status: "pending",
-      submittedAt: "2024-01-15T10:30:00Z",
-    },
-    {
-      id: 2,
-      type: "marketing",
-      field: "website",
-      oldValue: "https://somchai-agent.com",
-      newValue: "https://new-somchai-agent.com",
-      status: "approved",
-      submittedAt: "2024-01-14T15:20:00Z",
-      approvedAt: "2024-01-15T09:15:00Z",
-    },
-    {
-      id: 3,
-      type: "basic",
-      field: "bio",
-      oldValue: "นายหน้าอสังหาริมทรัพย์มืออาชีพ",
-      newValue: "นายหน้าอสังหาริมทรัพย์มืออาชีพ ประสบการณ์กว่า 15 ปี",
-      status: "rejected",
-      submittedAt: "2024-01-13T14:10:00Z",
-      rejectedAt: "2024-01-14T11:30:00Z",
-      rejectionReason: "ข้อมูลประสบการณ์ไม่ตรงกับเอกสารที่ยื่น",
-    },
-  ],
-}
 
 export default function ProfileManagementPage() {
   const [activeTab, setActiveTab] = useState("basic")
   const [isEditing, setIsEditing] = useState(false)
   // Update the formData structure to include arrays for multiple contact methods
   const [formData, setFormData] = useState({
-    ...profileData,
+    basic: {
+      firstName: "",
+      lastName: "",
+      profileImage: "",
+      coverImage: "",
+      address: "",
+      bio: "",
+      specialties: [],
+    },
     contact: {
-      ...profileData.contact,
-      phones: profileData.contact.phone ? [{ value: profileData.contact.phone, verified: false, id: 1 }] : [],
-      emails: profileData.contact.email ? [{ value: profileData.contact.email, verified: false, id: 1 }] : [],
-      lineIds: profileData.contact.lineId ? [{ value: profileData.contact.lineId, verified: false, id: 1 }] : [],
+      phones: [],
+      emails: [],
+      lineIds: [],
     },
     marketing: {
-      ...profileData.marketing,
-      facebookPages: profileData.marketing.facebook
-        ? [{ url: profileData.marketing.facebook, verified: false, id: 1 }]
-        : [],
-      instagramAccounts: profileData.marketing.instagram
-        ? [{ url: profileData.marketing.instagram, verified: false, id: 1 }]
-        : [],
-      lineOAs: profileData.marketing.lineOA ? [{ value: profileData.marketing.lineOA, verified: false, id: 1 }] : [],
-      websites: profileData.marketing.website ? [{ url: profileData.marketing.website, verified: false, id: 1 }] : [],
+      facebookPages: [],
+      instagramAccounts: [],
+      lineOAs: [],
+      websites: [],
       otherChannels: [],
     },
+    banking: [],
+    visibility: {
+      showPhone: true,
+      showEmail: true,
+      showLineId: true,
+      showFacebook: true,
+      showInstagram: true,
+      showLineOA: true,
+      showWebsite: true,
+      showBanking: false,
+    },
+    pendingApprovals: [],
   })
   const [newSpecialty, setNewSpecialty] = useState("")
   const [newMarketingChannel, setNewMarketingChannel] = useState({ type: "", url: "" })
@@ -164,12 +104,55 @@ export default function ProfileManagementPage() {
     })
   }
 
-  const handleSubmitForApproval = () => {
-    toast({
-      title: "ส่งขออนุมัติสำเร็จ",
-      description: "ข้อมูลของคุณได้รับการส่งไปยังผู้ดูแลระบบเพื่อตรวจสอบแล้ว",
-    })
+  const submitAgentProfile = async () => {
+    try {
+      const payload = {
+        name: `${formData.basic.firstName} ${formData.basic.lastName}`.trim(), // รวมชื่อ-นามสกุล
+        location: formData.basic.address,
+        bio: formData.basic.bio,
+        image_url: formData.basic.profileImage,
+        phone: formData.contact.phones[0]?.value || "",
+        email: formData.contact.emails[0]?.value || "",
+        line_id: formData.contact.lineIds[0]?.value || "",
+        social_facebook: formData.marketing.facebookPages[0]?.url || "",
+        instagram: formData.marketing.instagramAccounts[0]?.url || "",
+        website: formData.marketing.websites[0]?.url || "",
+        specialties: formData.basic.specialties, // สมมุติว่า column นี้เป็น `text[]` ใน Supabase
+        banking: formData.banking, // ถ้า column นี้เป็น `jsonb` ก็ส่งได้ตรงๆ
+        status: "pending", // คุณอาจระบุ status เริ่มต้น
+      }
+  
+      const res = await fetch("/api/agents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+  
+      const result = await res.json()
+  
+      if (!res.ok) {
+        throw new Error(result.error || "เกิดข้อผิดพลาดในการส่งข้อมูล")
+      }
+  
+      toast({
+        title: "ส่งขออนุมัติสำเร็จ",
+        description: "ข้อมูลของคุณถูกส่งเข้าสู่ระบบแล้ว",
+      })
+    } catch (error) {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: error instanceof Error ? error.message : "ไม่สามารถส่งข้อมูลได้",
+        variant: "destructive",
+      })
+    }
   }
+  
+  const handleSubmitForApproval = () => {
+    submitAgentProfile()
+  }
+  
 
   const handleCopyProfileLink = () => {
     navigator.clipboard.writeText(`https://checkteepak.com/agent/somchai-jaidee`)
@@ -339,7 +322,7 @@ export default function ProfileManagementPage() {
                 </div>
 
                 <div>
-                  <Label className="text-base font-medium">รูปปก</Label>
+                  <Label className="text-base font-medium">รูปภาพหน้าปก</Label>
                   <div className="mt-2">
                     <div className="relative w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
                       <img
