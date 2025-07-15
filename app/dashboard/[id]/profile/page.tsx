@@ -1,5 +1,6 @@
 "use client"
 
+
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,105 +50,43 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "@/components/ui/use-toast"
 
-// Mock data
-const profileData = {
-  basic: {
-    firstName: "สมชาย",
-    lastName: "ใจดี",
-    profileImage: "/placeholder.svg?height=150&width=150&text=สมชาย",
-    coverImage: "/placeholder.svg?height=300&width=800&text=Cover",
-    address: "123 ถนนสุขุมวิท แขวงคลองตัน เขตคลองตัน กรุงเทพมหานคร 10110",
-    bio: "นายหน้าอสังหาริมทรัพย์มืออาชีพ ประสบการณ์กว่า 10 ปี เชี่ยวชาญด้านคอนโดมิเนียมและบ้านเดี่ยวในเขตกรุงเทพฯ",
-    specialties: ["คอนโดมิเนียม", "บ้านเดี่ยว", "ทาวน์เฮาส์", "อสังหาฯ เพื่อการลงทุน"],
-  },
-  contact: {
-    phone: "081-234-5678",
-    email: "somchai@example.com",
-    lineId: "somchai_agent",
-  },
-  marketing: {
-    facebook: "https://facebook.com/somchai.agent",
-    instagram: "https://instagram.com/somchai_agent",
-    lineOA: "@somchai_agent",
-    website: "https://somchai-agent.com",
-  },
-  banking: [
-    {
-      id: 1,
-      bankName: "ธนาคารกสิกรไทย",
-      accountNumber: "123-4-56789-0",
-      accountName: "นายสมชาย ใจดี",
-      isPrimary: true,
-    },
-  ],
-  visibility: {
-    showPhone: true,
-    showEmail: true,
-    showLineId: true,
-    showFacebook: true,
-    showInstagram: true,
-    showLineOA: true,
-    showWebsite: true,
-    showBanking: false,
-  },
-  pendingApprovals: [
-    {
-      id: 1,
-      type: "contact",
-      field: "phone",
-      oldValue: "081-234-5678",
-      newValue: "082-345-6789",
-      status: "pending",
-      submittedAt: "2024-01-15T10:30:00Z",
-    },
-    {
-      id: 2,
-      type: "marketing",
-      field: "website",
-      oldValue: "https://somchai-agent.com",
-      newValue: "https://new-somchai-agent.com",
-      status: "approved",
-      submittedAt: "2024-01-14T15:20:00Z",
-      approvedAt: "2024-01-15T09:15:00Z",
-    },
-    {
-      id: 3,
-      type: "basic",
-      field: "bio",
-      oldValue: "นายหน้าอสังหาริมทรัพย์มืออาชีพ",
-      newValue: "นายหน้าอสังหาริมทรัพย์มืออาชีพ ประสบการณ์กว่า 15 ปี",
-      status: "rejected",
-      submittedAt: "2024-01-13T14:10:00Z",
-      rejectedAt: "2024-01-14T11:30:00Z",
-      rejectionReason: "ข้อมูลประสบการณ์ไม่ตรงกับเอกสารที่ยื่น",
-    },
-  ],
-}
-
 export default function ProfileManagementPage() {
   const [activeTab, setActiveTab] = useState("basic")
   const [isEditing, setIsEditing] = useState(false)
-  // Update the formData structure to include arrays for multiple contact methods
   const [formData, setFormData] = useState({
-    ...profileData,
+    basic: {
+      firstName: "",
+      lastName: "",
+      profileImage: "",
+      coverImage: "",
+      address: "",
+      bio: "",
+      specialties: [],
+    },
     contact: {
-      ...profileData.contact,
-      phones: profileData.contact.phone ? [{ value: profileData.contact.phone, verified: false, id: 1 }] : [],
-      emails: profileData.contact.email ? [{ value: profileData.contact.email, verified: false, id: 1 }] : [],
-      lineIds: profileData.contact.lineId ? [{ value: profileData.contact.lineId, verified: false, id: 1 }] : [],
+      phones: [],
+      emails: [],
+      lineIds: [],
     },
     marketing: {
-      ...profileData.marketing,
-      facebookPages: profileData.marketing.facebook
-        ? [{ url: profileData.marketing.facebook, verified: false, id: 1 }]
-        : [],
-      instagramAccounts: profileData.marketing.instagram
-        ? [{ url: profileData.marketing.instagram, verified: false, id: 1 }]
-        : [],
-      lineOAs: profileData.marketing.lineOA ? [{ value: profileData.marketing.lineOA, verified: false, id: 1 }] : [],
-      websites: profileData.marketing.website ? [{ url: profileData.marketing.website, verified: false, id: 1 }] : [],
+      facebookPages: [],
+      instagramAccounts: [],
+      lineOAs: [],
+      websites: [],
       otherChannels: [],
     },
+    banking: [],
+    visibility: {
+      showPhone: true,
+      showEmail: true,
+      showLineId: true,
+      showFacebook: true,
+      showInstagram: true,
+      showLineOA: true,
+      showWebsite: true,
+      showBanking: false,
+    },
+    pendingApprovals: [],
   })
   const [newSpecialty, setNewSpecialty] = useState("")
   const [newMarketingChannel, setNewMarketingChannel] = useState({ type: "", url: "" })
@@ -339,7 +278,7 @@ export default function ProfileManagementPage() {
                 </div>
 
                 <div>
-                  <Label className="text-base font-medium">รูปปก</Label>
+                  <Label className="text-base font-medium">รูปภาพหน้าปก</Label>
                   <div className="mt-2">
                     <div className="relative w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
                       <img
@@ -489,7 +428,7 @@ export default function ProfileManagementPage() {
 
                 {/* List of phone numbers */}
                 <div className="space-y-3">
-                  {(formData.contact.phones || [{ value: formData.contact.phone, verified: false, id: 1 }]).map(
+                  {(formData.contact.phones || [{ value: formData.phone, verified: false, id: 1 }]).map(
                     (phone, index) => (
                       <div key={phone.id || index} className="flex items-center gap-2">
                         <Input
@@ -497,7 +436,7 @@ export default function ProfileManagementPage() {
                           onChange={(e) => {
                             const updatedPhones = [
                               ...(formData.contact.phones || [
-                                { value: formData.contact.phone, verified: false, id: 1 },
+                                { value: formData.phone, verified: false, id: 1 },
                               ]),
                             ]
                             updatedPhones[index].value = e.target.value
