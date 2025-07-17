@@ -39,13 +39,34 @@ export default function ReportPage() {
     otherEvidence: [] as File[],
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // ในระบบจริงจะส่งข้อมูลไป API
-    console.log("Report submitted:", { formData, uploadedFiles })
-    alert("ส่งรายงานเรียบร้อยแล้ว ทีมงานจะตรวจสอบและติดต่อกลับภายใน 24 ชั่วโมง")
-  }
 
+    formData.title = formData.reportType || "ไม่มีหัวข้อ"
+  
+    const form = new FormData()
+    form.append("json", JSON.stringify(formData))
+  
+    if (uploadedFiles.transferSlip) form.append("transferSlip", uploadedFiles.transferSlip)
+    if (uploadedFiles.fraudEvidence) form.append("fraudEvidence", uploadedFiles.fraudEvidence)
+    if (uploadedFiles.blockEvidence) form.append("blockEvidence", uploadedFiles.blockEvidence)
+    uploadedFiles.otherEvidence.forEach((file) => {
+      form.append("otherEvidence", file)
+    })
+  
+    const res = await fetch("/api/reports", {
+      method: "POST",
+      body: form,
+    })
+  
+    const data = await res.json()
+    if (data.success) {
+      alert("ส่งรายงานเรียบร้อยแล้ว")
+    } else {
+      alert("เกิดข้อผิดพลาดในการส่งรายงาน")
+    }
+  }
+  
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
     const file = e.target.files?.[0]
     if (file) {
