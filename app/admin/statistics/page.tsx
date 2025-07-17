@@ -46,16 +46,16 @@ const popularMembers = [
 
 // มิจฉาชีพยอดนิยมที่ถูกค้นหา
 const popularFraudsters = [
-  { id: 1, name: "สมชาย หลอกลวง", searches: 2345, riskLevel: "สูง", cases: 12, totalAmount: 850000 },
-  { id: 2, name: "วิไล โกงเงิน", searches: 1876, riskLevel: "สูง", cases: 8, totalAmount: 650000 },
-  { id: 3, name: "ดำรง ปลอมแปลง", searches: 1543, riskLevel: "กลาง", cases: 5, totalAmount: 320000 },
-  { id: 4, name: "มาลี หลอกขาย", searches: 1234, riskLevel: "สูง", cases: 9, totalAmount: 720000 },
-  { id: 5, name: "สมศรี ฉ้อโกง", searches: 987, riskLevel: "กลาง", cases: 4, totalAmount: 180000 },
-  { id: 6, name: "ประยุทธ์ หลอกลวง", searches: 876, riskLevel: "สูง", cases: 7, totalAmount: 540000 },
-  { id: 7, name: "สุดา โกงเงิน", searches: 765, riskLevel: "กลาง", cases: 3, totalAmount: 95000 },
-  { id: 8, name: "วิชัย ปลอมแปลง", searches: 654, riskLevel: "ต่ำ", cases: 2, totalAmount: 45000 },
-  { id: 9, name: "นิรันดร์ หลอกขาย", searches: 543, riskLevel: "กลาง", cases: 4, totalAmount: 210000 },
-  { id: 10, name: "สมหวัง ฉ้อโกง", searches: 432, riskLevel: "ต่ำ", cases: 1, totalAmount: 25000 },
+  { id: 1, name: "สมชาย หลอกลวง", searches: 2345, riskLevel: "สูง", cases: 12, },
+  { id: 2, name: "วิไล โกงเงิน", searches: 1876, riskLevel: "สูง", cases: 8, },
+  { id: 3, name: "ดำรง ปลอมแปลง", searches: 1543, riskLevel: "กลาง", cases: 5, },
+  { id: 4, name: "มาลี หลอกขาย", searches: 1234, riskLevel: "สูง", cases: 9, },
+  { id: 5, name: "สมศรี ฉ้อโกง", searches: 987, riskLevel: "กลาง", cases: 4, },
+  { id: 6, name: "ประยุทธ์ หลอกลวง", searches: 876, riskLevel: "สูง", cases: 7, },
+  { id: 7, name: "สุดา โกงเงิน", searches: 765, riskLevel: "กลาง", cases: 3, },
+  { id: 8, name: "วิชัย ปลอมแปลง", searches: 654, riskLevel: "ต่ำ", cases: 2 },
+  { id: 9, name: "นิรันดร์ หลอกขาย", searches: 543, riskLevel: "กลาง", cases: 4, },
+  { id: 10, name: "สมหวัง ฉ้อโกง", searches: 432, riskLevel: "ต่ำ", cases: 1, },
 ]
 
 // สถิติช่องทาง
@@ -421,9 +421,6 @@ export default function StatisticsPage() {
                         <Search className="h-4 w-4 text-muted-foreground" />
                         <span className="font-semibold">{formatNumber(fraudster.searches)}</span>
                         <span className="text-sm text-muted-foreground">ครั้ง</span>
-                      </div>
-                      <div className="text-sm text-red-600 font-medium mt-1">
-                        {formatCurrency(fraudster.totalAmount)}
                       </div>
                     </div>
                   </div>
