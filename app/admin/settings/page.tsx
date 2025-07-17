@@ -441,21 +441,6 @@ export default function AdminSettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="encryptionMethod">วิธีการเข้ารหัส</Label>
-                    <Select
-                      value={securitySettings.encryptionMethod}
-                      onValueChange={(value) => setSecuritySettings({ ...securitySettings, encryptionMethod: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="AES-256">AES-256</SelectItem>
-                        <SelectItem value="AES-128">AES-128</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="backupFrequency">ความถี่การสำรองข้อมูล</Label>
                     <Select
                       value={securitySettings.backupFrequency}
