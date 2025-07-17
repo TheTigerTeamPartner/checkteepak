@@ -1,0 +1,131 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.accommodations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name character varying NOT NULL,
+  location character varying NOT NULL,
+  image_url text,
+  rating numeric DEFAULT 0.0,
+  review_count integer DEFAULT 0,
+  is_verified boolean DEFAULT false,
+  agent_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT accommodations_pkey PRIMARY KEY (id),
+  CONSTRAINT accommodations_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id)
+);
+CREATE TABLE public.agent_approval_history (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  agent_id uuid,
+  status text CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
+  reason text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT agent_approval_history_pkey PRIMARY KEY (id),
+  CONSTRAINT agent_approval_history_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id)
+);
+CREATE TABLE public.agents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid,
+  name character varying NOT NULL,
+  location character varying NOT NULL,
+  image_url text,
+  status character varying DEFAULT 'new'::character varying CHECK (status::text = ANY (ARRAY['verified'::text, 'new'::text, 'experienced'::text, 'pending'::text])),
+  rating numeric DEFAULT 0.0,
+  review_count integer DEFAULT 0,
+  phone character varying,
+  specialties ARRAY,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  social_facebook text,
+  title text,
+  join_date date,
+  bio text,
+  email text,
+  line_id text,
+  instagram text,
+  website text,
+  total_contacts integer,
+  avg_response_time text,
+  sucssesful_deals integer,
+  certification text,
+  banking jsonb,
+  last_viewed timestamp with time zone,
+  submitted_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT agents_pkey PRIMARY KEY (id),
+  CONSTRAINT agents_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.bank_accounts (
+  id uuid NOT NULL,
+  agent_id uuid,
+  bank_name text,
+  account_number text,
+  account_name text,
+  status text DEFAULT 'pending'::text,
+  created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT bank_accounts_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_accounts_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id)
+);
+CREATE TABLE public.business_licenses (
+  id uuid NOT NULL,
+  agent_id uuid,
+  url text,
+  status text DEFAULT 'pending'::text,
+  created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT business_licenses_pkey PRIMARY KEY (id),
+  CONSTRAINT business_licenses_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id)
+);
+CREATE TABLE public.reports (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  reporter_id uuid,
+  reported_agent_id uuid,
+  title character varying NOT NULL,
+  description text NOT NULL,
+  status character varying DEFAULT 'pending'::character varying CHECK (status::text = ANY (ARRAY['pending'::character varying, 'investigating'::character varying, 'resolved'::character varying, 'dismissed'::character varying]::text[])),
+  evidence_urls ARRAY,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  accommodation_name character varying,
+  phone character varying,
+  report_type character varying,
+  incident_date date,
+  bank_account character varying,
+  bank_name character varying,
+  account_holder character varying,
+  reporter_name character varying,
+  reporter_phone character varying,
+  reporter_email character varying,
+  facebook_profile character varying,
+  instagram_profile character varying,
+  line_id character varying,
+  tiktok_profile character varying,
+  website_url character varying,
+  other_social_media text,
+  CONSTRAINT reports_pkey PRIMARY KEY (id),
+  CONSTRAINT reports_reporter_id_fkey FOREIGN KEY (reporter_id) REFERENCES public.users(id),
+  CONSTRAINT reports_reported_agent_id_fkey FOREIGN KEY (reported_agent_id) REFERENCES public.agents(id)
+);
+CREATE TABLE public.subscriptions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid,
+  plan_type character varying NOT NULL CHECK (plan_type::text = ANY (ARRAY['basic'::character varying, 'premium'::character varying, 'enterprise'::character varying]::text[])),
+  status character varying DEFAULT 'active'::character varying CHECK (status::text = ANY (ARRAY['active'::character varying, 'inactive'::character varying, 'cancelled'::character varying]::text[])),
+  start_date timestamp with time zone DEFAULT now(),
+  end_date timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT subscriptions_pkey PRIMARY KEY (id),
+  CONSTRAINT subscriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.users (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  email character varying NOT NULL UNIQUE,
+  name character varying NOT NULL,
+  phone character varying,
+  role character varying DEFAULT 'user'::character varying CHECK (role::text = ANY (ARRAY['user'::character varying, 'admin'::character varying, 'agent'::character varying]::text[])),
+  status character varying DEFAULT 'active'::character varying CHECK (status::text = ANY (ARRAY['active'::character varying, 'inactive'::character varying, 'suspended'::character varying]::text[])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT users_pkey PRIMARY KEY (id)
+);
