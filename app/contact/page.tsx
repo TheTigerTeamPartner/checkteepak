@@ -76,7 +76,7 @@ export default function Component() {
                   <div>
                     <h3 className="font-semibold text-gray-900">ที่อยู่</h3>
                     <p className="text-gray-600 mt-1">
-                      123 ถนนสุขุมวิท แขวงคลองตัน
+                      123 ถนนสุขุมวิท อาคารเช็คที่พัก  แขวงคลองตัน 
                       <br />
                       เขตวัฒนา กรุงเทพมหานคร 10110
                     </p>
@@ -88,7 +88,7 @@ export default function Component() {
                   <div>
                     <h3 className="font-semibold text-gray-900">โทรศัพท์</h3>
                     <p className="text-gray-600 mt-1">02-123-4567</p>
-                    <p className="text-gray-600">081-234-5678</p>
+                    <p className="text-gray-600">02-123-4567</p>
                   </div>
                 </div>
 
@@ -96,8 +96,8 @@ export default function Component() {
                   <Mail className="h-6 w-6 text-blue-600 mt-1 flex-shrink-0" />
                   <div>
                     <h3 className="font-semibold text-gray-900">อีเมล</h3>
-                    <p className="text-gray-600 mt-1">info@company.com</p>
-                    <p className="text-gray-600">support@company.com</p>
+                    <p className="text-gray-600 mt-1">checkteepak@gmail.com </p>
+                    <p className="text-gray-600">checkteepak@gmail.com</p>
                   </div>
                 </div>
 
