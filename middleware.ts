@@ -27,7 +27,7 @@ export async function middleware(req: NextRequest) {
       .single();
 
     if (profile?.role !== "admin") {
-      return NextResponse.redirect(new URL("/admin", req.url));
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
   }
 
