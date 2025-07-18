@@ -6,6 +6,23 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY! // ใช้ Service Role เพราะต้องอนุญาตให้เขียนแม้ไม่ login
 );
 
+export async function GET() {
+  try {
+    const { data: reports, error } = await supabase
+      .from('reports')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ reports });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -24,7 +41,7 @@ export async function POST(request: Request) {
     if (transferSlip) {
       const filename = `reports/${Date.now()}_${transferSlip.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("your-bucket-name") // ✅ เปลี่ยนให้ตรงกับชื่อ bucket จริงใน Supabase
+        .from("reports") // ✅ เปลี่ยนให้ตรงกับชื่อ bucket จริงใน Supabase
         .upload(filename, transferSlip, {
           cacheControl: "3600",
           upsert: false,
