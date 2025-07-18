@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -49,11 +49,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "@/components/ui/use-toast"
 
-
 export default function ProfileManagementPage() {
   const [activeTab, setActiveTab] = useState("basic")
   const [isEditing, setIsEditing] = useState(false)
-  // Update the formData structure to include arrays for multiple contact methods
   const [formData, setFormData] = useState({
     basic: {
       firstName: "",
@@ -97,6 +95,33 @@ export default function ProfileManagementPage() {
     accountName: "",
   })
 
+  // Fetch approvals จาก API
+  useEffect(() => {
+    const fetchApprovals = async () => {
+      try {
+        const response = await fetch('/api/agents/approvals');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const { data } = await response.json();
+        // ถ้า data.status มีค่า ให้สร้าง array เดี่ยว
+        const approvals = data.status ? [{ status: data.status }] : [];
+        setFormData((prev) => ({
+          ...prev,
+          pendingApprovals: approvals,
+        }));
+      } catch (error) {
+        console.error('Error fetching approvals:', error);
+        toast({
+          title: "ไม่สามารถโหลดข้อมูลการอนุมัติ",
+          description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ",
+          variant: "destructive",
+        });
+      }
+    };
+    fetchApprovals()
+  }, [])
+
   const handleSaveDraft = () => {
     toast({
       title: "บันทึกร่างสำเร็จ",
@@ -107,7 +132,7 @@ export default function ProfileManagementPage() {
   const submitAgentProfile = async () => {
     try {
       const payload = {
-        name: `${formData.basic.firstName} ${formData.basic.lastName}`.trim(), // รวมชื่อ-นามสกุล
+        name: `${formData.basic.firstName} ${formData.basic.lastName}`.trim(),
         location: formData.basic.address,
         bio: formData.basic.bio,
         image_url: formData.basic.profileImage,
@@ -117,11 +142,11 @@ export default function ProfileManagementPage() {
         social_facebook: formData.marketing.facebookPages[0]?.url || "",
         instagram: formData.marketing.instagramAccounts[0]?.url || "",
         website: formData.marketing.websites[0]?.url || "",
-        specialties: formData.basic.specialties, // สมมุติว่า column นี้เป็น `text[]` ใน Supabase
-        banking: formData.banking, // ถ้า column นี้เป็น `jsonb` ก็ส่งได้ตรงๆ
-        status: "pending", // คุณอาจระบุ status เริ่มต้น
+        specialties: formData.basic.specialties,
+        banking: formData.banking,
+        status: "pending",
       }
-  
+
       const res = await fetch("/api/agents", {
         method: "POST",
         headers: {
@@ -129,13 +154,28 @@ export default function ProfileManagementPage() {
         },
         body: JSON.stringify(payload),
       })
-  
+
       const result = await res.json()
-  
+
       if (!res.ok) {
         throw new Error(result.error || "เกิดข้อผิดพลาดในการส่งข้อมูล")
       }
-  
+
+      // Fetch ข้อมูลสถานะใหม่หลังจากส่งข้อมูลสำเร็จ
+      const fetchApprovals = async () => {
+        try {
+          const response = await fetch('/api/agents/approvals')
+          const data = await response.json()
+          setFormData((prev) => ({
+            ...prev,
+            pendingApprovals: data,
+          }))
+        } catch (error) {
+          console.error('Error fetching approvals after submission:', error)
+        }
+      }
+      fetchApprovals()
+
       toast({
         title: "ส่งขออนุมัติสำเร็จ",
         description: "ข้อมูลของคุณถูกส่งเข้าสู่ระบบแล้ว",
@@ -148,11 +188,38 @@ export default function ProfileManagementPage() {
       })
     }
   }
-  
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "pending":
+        return (
+          <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+            <Clock className="w-3 h-3 mr-1" />
+            รอการอนุมัติ
+          </Badge>
+        )
+      case "verified":
+        return (
+          <Badge variant="outline" className="text-green-600 border-green-600">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            อนุมัติแล้ว
+          </Badge>
+        )
+      case "rejected":
+        return (
+          <Badge variant="outline" className="text-red-600 border-red-600">
+            <XCircle className="w-3 h-3 mr-1" />
+            ไม่อนุมัติ
+          </Badge>
+        )
+      default:
+        return null
+    }
+  }
+
   const handleSubmitForApproval = () => {
     submitAgentProfile()
   }
-  
 
   const handleCopyProfileLink = () => {
     navigator.clipboard.writeText(`https://checkteepak.com/agent/somchai-jaidee`)
@@ -175,7 +242,7 @@ export default function ProfileManagementPage() {
     }
   }
 
-  const removeSpecialty = (index: number) => {
+  const removeSpecialty = (index) => {
     setFormData((prev) => ({
       ...prev,
       basic: {
@@ -202,14 +269,14 @@ export default function ProfileManagementPage() {
     }
   }
 
-  const removeBankAccount = (id: number) => {
+  const removeBankAccount = (id) => {
     setFormData((prev) => ({
       ...prev,
       banking: prev.banking.filter((account) => account.id !== id),
     }))
   }
 
-  const setPrimaryAccount = (id: number) => {
+  const setPrimaryAccount = (id) => {
     setFormData((prev) => ({
       ...prev,
       banking: prev.banking.map((account) => ({
@@ -217,34 +284,6 @@ export default function ProfileManagementPage() {
         isPrimary: account.id === id,
       })),
     }))
-  }
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return (
-          <Badge variant="outline" className="text-yellow-600 border-yellow-600">
-            <Clock className="w-3 h-3 mr-1" />
-            รอการอนุมัติ
-          </Badge>
-        )
-      case "approved":
-        return (
-          <Badge variant="outline" className="text-green-600 border-green-600">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            อนุมัติแล้ว
-          </Badge>
-        )
-      case "rejected":
-        return (
-          <Badge variant="outline" className="text-red-600 border-red-600">
-            <XCircle className="w-3 h-3 mr-1" />
-            ไม่อนุมัติ
-          </Badge>
-        )
-      default:
-        return null
-    }
   }
 
   return (
@@ -270,14 +309,11 @@ export default function ProfileManagementPage() {
       </div>
 
       {/* Alert for pending approvals */}
-      {formData.pendingApprovals.some((item) => item.status === "pending") && (
+      {Array.isArray(formData.pendingApprovals) && formData.pendingApprovals.some((item) => item.status === "pending") && (
         <Card className="border-yellow-200 bg-yellow-50">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 text-yellow-800">
-              <AlertCircle className="w-5 h-5" />
-              <span className="font-medium">
-                คุณมีข้อมูล {formData.pendingApprovals.filter((item) => item.status === "pending").length} รายการ ที่รอการอนุมัติ
-              </span>
+              {/* เนื้อหา alert */}
             </div>
           </CardContent>
         </Card>
@@ -1527,7 +1563,6 @@ export default function ProfileManagementPage() {
                     </div>
                   </Card>
                 ))}
-
                 {formData.pendingApprovals.length === 0 && (
                   <div className="text-center py-8 text-gray-500">ไม่มีข้อมูลที่รอการอนุมัติ</div>
                 )}
