@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -50,117 +49,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "@/components/ui/use-toast"
 
-interface Approval {
-  id: string;
-  status: 'pending' | 'approved' | 'rejected';
-  created_at: string;
-  reason?: string;
-}
-
-interface UserData {
-  id: string;
-  approval_status: 'pending' | 'approved' | 'rejected';
-  approval_history: Approval[];
-  // Add other user data fields here
-}
 
 export default function ProfileManagementPage() {
-  const [loading, setLoading] = useState(true);
-  const [userData, setUserData] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [approvalStatus, setApprovalStatus] = useState("pending"); // pending, approved, rejected
-
-  // Initialize Supabase client
-  const supabase = createClientComponentClient();
-
-  // Fetch user data when component mounts
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          if (error) {
-            console.error('Error fetching user data:', error);
-            toast({
-              title: "เกิดข้อผิดพลาด",
-              description: "ไม่สามารถดึงข้อมูลผู้ใช้ได้",
-              variant: "destructive"
-            });
-          } else {
-            setUserData(data);
-            setApprovalStatus(data?.approval_status || "pending");
-          }
-        }
-      } catch (error) {
-        console.error('Unexpected error:', error);
-        toast({
-          title: "เกิดข้อผิดพลาด",
-          description: "เกิดข้อผิดพลาดในการโหลดข้อมูล",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [supabase]);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          if (error) {
-            console.error('Error fetching user data:', error);
-            toast({
-              title: "เกิดข้อผิดพลาด",
-              description: "ไม่สามารถดึงข้อมูลผู้ใช้ได้",
-              variant: "destructive"
-            });
-          } else {
-            setUserData(data);
-            setApprovalStatus(data?.approval_status || "pending");
-          }
-        }
-      } catch (error) {
-        console.error('Unexpected error:', error);
-        toast({
-          title: "เกิดข้อผิดพลาด",
-          description: "เกิดข้อผิดพลาดในการโหลดข้อมูล",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [supabase]);
-
   const [activeTab, setActiveTab] = useState("basic")
   const [isEditing, setIsEditing] = useState(false)
+  // Update the formData structure to include arrays for multiple contact methods
   const [formData, setFormData] = useState({
     basic: {
-      firstName: userData?.first_name || "",
-      lastName: userData?.last_name || "",
-      profileImage: userData?.profile_image || "",
-      coverImage: userData?.cover_image || "",
-      address: userData?.address || "",
-      bio: userData?.bio || "",
-      specialties: userData?.specialties || [],
       firstName: "",
       lastName: "",
       profileImage: "",
@@ -211,10 +106,8 @@ export default function ProfileManagementPage() {
 
   const submitAgentProfile = async () => {
     try {
-      setIsSubmitting(true);
-
       const payload = {
-        name: `${formData.basic.firstName} ${formData.basic.lastName}`.trim(),
+        name: `${formData.basic.firstName} ${formData.basic.lastName}`.trim(), // รวมชื่อ-นามสกุล
         location: formData.basic.address,
         bio: formData.basic.bio,
         image_url: formData.basic.profileImage,
@@ -224,52 +117,42 @@ export default function ProfileManagementPage() {
         social_facebook: formData.marketing.facebookPages[0]?.url || "",
         instagram: formData.marketing.instagramAccounts[0]?.url || "",
         website: formData.marketing.websites[0]?.url || "",
-        specialties: formData.basic.specialties,
-        banking: formData.banking,
-        status: "pending",
+        specialties: formData.basic.specialties, // สมมุติว่า column นี้เป็น `text[]` ใน Supabase
+        banking: formData.banking, // ถ้า column นี้เป็น `jsonb` ก็ส่งได้ตรงๆ
+        status: "pending", // คุณอาจระบุ status เริ่มต้น
       }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        throw new Error("ไม่พบข้อมูลผู้ใช้");
+  
+      const res = await fetch("/api/agents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+  
+      const result = await res.json()
+  
+      if (!res.ok) {
+        throw new Error(result.error || "เกิดข้อผิดพลาดในการส่งข้อมูล")
       }
-
-      const { error } = await supabase
-        .from('users')
-        .update({
-          ...payload,
-          approval_status: "pending",
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', session.user.id);
-
-      if (error) {
-        throw error;
-      }
-
+  
       toast({
         title: "ส่งขออนุมัติสำเร็จ",
         description: "ข้อมูลของคุณถูกส่งเข้าสู่ระบบแล้ว",
-      });
-
-      // อัพเดทสถานะใน UI
-      setApprovalStatus("pending");
+      })
     } catch (error) {
-      console.error('Error submitting profile:', error);
       toast({
         title: "เกิดข้อผิดพลาด",
         description: error instanceof Error ? error.message : "ไม่สามารถส่งข้อมูลได้",
         variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+      })
     }
   }
-
+  
   const handleSubmitForApproval = () => {
     submitAgentProfile()
   }
-
+  
 
   const handleCopyProfileLink = () => {
     navigator.clipboard.writeText(`https://checkteepak.com/agent/somchai-jaidee`)
@@ -372,16 +255,28 @@ export default function ProfileManagementPage() {
           <h1 className="text-2xl font-bold text-gray-900">จัดการโปรไฟล์</h1>
           <p className="text-gray-600">จัดการข้อมูลโปรไฟล์ที่จะแสดงให้ลูกค้าเห็น</p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handleCopyProfileLink}>
+            <Copy className="w-4 h-4 mr-2" />
+            คัดลอกลิงก์โปรไฟล์
+          </Button>
+          <Button variant="outline" asChild>
+            <a href="/agent/somchai-jaidee" target="_blank" rel="noreferrer">
+              <ExternalLink className="w-4 h-4 mr-2" />
+              ดูตัวอย่าง
+            </a>
+          </Button>
+        </div>
       </div>
 
       {/* Alert for pending approvals */}
-      {userData?.approval_history?.some((approval) => approval.status === "pending") && (
+      {formData.pendingApprovals.some((item) => item.status === "pending") && (
         <Card className="border-yellow-200 bg-yellow-50">
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="flex items-center gap-2 text-yellow-800">
               <AlertCircle className="w-5 h-5" />
               <span className="font-medium">
-                คุณมีข้อมูล {userData.approval_history.filter((approval) => approval.status === "pending").length} รายการ ที่รอการอนุมัติ
+                คุณมีข้อมูล {formData.pendingApprovals.filter((item) => item.status === "pending").length} รายการ ที่รอการอนุมัติ
               </span>
             </div>
           </CardContent>
@@ -577,7 +472,7 @@ export default function ProfileManagementPage() {
 
                 {/* List of phone numbers */}
                 <div className="space-y-3">
-                  {(formData.contact.phones || [{ value: formData.phone, verified: false, id: 1 }]).map(
+                  {(formData.contact.phones || [{ value: formData.contact.phone, verified: false, id: 1 }]).map(
                     (phone, index) => (
                       <div key={phone.id || index} className="flex items-center gap-2">
                         <Input
@@ -585,7 +480,7 @@ export default function ProfileManagementPage() {
                           onChange={(e) => {
                             const updatedPhones = [
                               ...(formData.contact.phones || [
-                                { value: formData.phone, verified: false, id: 1 },
+                                { value: formData.contact.phone, verified: false, id: 1 },
                               ]),
                             ]
                             updatedPhones[index].value = e.target.value
@@ -1578,40 +1473,64 @@ export default function ProfileManagementPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5" />
-                สถานะอนุมัติ
+                สถานะการอนุมัติ
               </CardTitle>
-              <CardDescription>ตรวจสอบสถานะการอนุมัติข้อมูลของคุณ</CardDescription>
+              <CardDescription>ติดตามสถานะการอนุมัติข้อมูลที่คุณส่งไป</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium mb-2">สถานะล่าสุด</h3>
-                  {getStatusBadge(approvalStatus)}
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">ประวัติการอนุมัติ</h3>
-                  <div className="space-y-4">
-                    {userData?.approval_history?.map((approval, index) => (
-                      <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">การอนุมัติ #{index + 1}</p>
-                            <p className="text-sm text-gray-500">
-                              {new Date(approval.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                          {getStatusBadge(approval.status)}
+                {formData.pendingApprovals.map((item) => (
+                  <Card key={item.id} className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">
+                            {item.type === "contact" && "ข้อมูลติดต่อ"}
+                            {item.type === "marketing" && "ช่องทางการตลาด"}
+                            {item.type === "basic" && "ข้อมูลพื้นฐาน"}
+                          </span>
+                          <span className="text-gray-500">- {item.field}</span>
                         </div>
-                        {approval.status === "rejected" && (
-                          <div className="mt-2 text-red-600">
-                            <p>เหตุผลไม่อนุมัติ:</p>
-                            <p className="mt-1">{approval.reason}</p>
+                        <div className="text-sm text-gray-600">
+                          <p>
+                            <span className="font-medium">เดิม:</span> {item.oldValue}
+                          </p>
+                          <p>
+                            <span className="font-medium">ใหม่:</span> {item.newValue}
+                          </p>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ส่งเมื่อ:{" "}
+                          {new Date(item.submittedAt).toLocaleDateString("th-TH", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                        {item.status === "rejected" && item.rejectionReason && (
+                          <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                            <span className="font-medium">เหตุผลที่ไม่อนุมัติ:</span> {item.rejectionReason}
                           </div>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      <div className="flex flex-col items-end gap-2">
+                        {getStatusBadge(item.status)}
+                        {item.status === "rejected" && (
+                          <Button variant="outline" size="sm">
+                            <Edit className="w-3 h-3 mr-1" />
+                            แก้ไขใหม่
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+
+                {formData.pendingApprovals.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">ไม่มีข้อมูลที่รอการอนุมัติ</div>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
   const {
     data: { session },
-    error: sessionError,
+    error: sessionError, // Added sessionError for more robust error handling
   } = await supabase.auth.getSession();
 
   if (!session) {
@@ -22,18 +22,18 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       if (error.code === "PGRST116") {
-        // Not found but not an error
+        // This means no agent profile was found for the user, which is not an error.
         return NextResponse.json({ data: null });
       }
+      // For other errors, return the error message.
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json({ data });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    );
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    console.error('Catch block error in GET:', errorMessage); // Added console.error for debugging
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
   const {
     data: { session },
-    error: sessionError,
+    error: sessionError, // Added sessionError for more robust error handling
   } = await supabase.auth.getSession();
 
   if (!session) {
@@ -50,29 +50,29 @@ export async function POST(request: NextRequest) {
 
   const agentData = await request.json();
 
-
+  // Force the agent ID to match the logged-in user's ID for security.
   const dataToUpsert = {
     ...agentData,
-    id: session.user.id,
-    user_id: session.user.id,
+    id: session.user.id, // This is the primary key and FK to users table.
+    user_id: session.user.id, // Ensure user_id is also set.
   };
 
   try {
     const { data, error } = await supabase
       .from("agents")
       .upsert(dataToUpsert, { onConflict: "id" })
-      .select()
+      .select() // Ensure .select() is called to return the upserted data
       .single();
 
     if (error) {
-
+      console.error('Supabase agent upsert error:', error);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ data }, { status: 200 });
+    return NextResponse.json({ data }, { status: 200 }); // Return 200 for upsert
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Internal server error";
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    console.error('Catch block error in POST:', errorMessage); // Added console.error for debugging
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

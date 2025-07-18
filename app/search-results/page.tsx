@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import {
   ArrowLeft, Shield, AlertTriangle, AlertCircle,
   Eye, Phone, MapPin, Calendar, CheckCircle,
@@ -11,7 +10,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
-type SearchResultType = "verified" | "unknown" | "fraudster"
+type SearchResultType = "verified" | "pending" | "scammer"
 
 interface SearchResult {
   type: SearchResultType
@@ -38,26 +37,30 @@ export default function SearchResultsPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClientComponentClient()
-
     const fetchData = async () => {
       setIsLoading(true)
-
       try {
-        const { data, error } = await supabase
-          .from("agents")
-          .select("*")
-          .or(`name.ilike.%${query}%,phone.ilike.%${query}%,email.ilike.%${query}%,title.ilike.%${query}%`)
-          .maybeSingle()
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+        const json = await res.json()
 
-        if (error) {
-          console.error("Supabase error:", error)
-          throw error
+        if (!res.ok) {
+          throw new Error(json.error || "Search failed")
         }
 
+        const data = json.data
+
         if (data) {
+          const status = data.status || "pending"
+          let type: SearchResultType = "pending"
+
+          if (status === "verified") {
+            type = "verified"
+          } else if (status === "scammer") {
+            type = "scammer"
+          }
+
           setResult({
-            type: "verified",
+            type,
             query,
             data: {
               id: data.id,
@@ -68,7 +71,9 @@ export default function SearchResultsPage() {
               joinDate: new Date(data.join_date).toLocaleDateString("th-TH", {
                 year: "numeric", month: "long", day: "numeric",
               }),
-              verificationStatus: "ยืนยันตัวตนแล้ว",
+              verificationStatus:
+                type === "verified" ? "ยืนยันตัวตนแล้ว" :
+                type === "scammer" ? "พบประวัติโกง" : "รอการยืนยัน",
               profileImage: data.profileImage || "/placeholder.svg",
               specialties: Array.isArray(data.certification)
                 ? data.certification
@@ -84,13 +89,12 @@ export default function SearchResultsPage() {
             },
           })
         } else {
-          setResult({ type: "unknown", query })
+          setResult({ type: "pending", query })
         }
       } catch (err) {
         console.error("Search error:", err)
-        setResult({ type: "unknown", query })
+        setResult({ type: "pending", query })
       }
-
       setIsLoading(false)
     }
 
@@ -98,11 +102,11 @@ export default function SearchResultsPage() {
   }, [query])
 
   const getResultColor = (type: SearchResultType) =>
-    type === "verified" ? "green" : type === "fraudster" ? "red" : "yellow"
+    type === "verified" ? "green" : type === "scammer" ? "red" : "yellow"
 
   const getResultIcon = (type: SearchResultType) =>
     type === "verified" ? <Shield className="h-8 w-8" /> :
-      type === "fraudster" ? <AlertCircle className="h-8 w-8" /> :
+      type === "scammer" ? <AlertCircle className="h-8 w-8" /> :
         <AlertTriangle className="h-8 w-8" />
 
   if (isLoading) {
@@ -129,22 +133,23 @@ export default function SearchResultsPage() {
           กลับหน้าแรก
         </Link>
 
-        <div className={`bg-white border-l-8 shadow-lg rounded-xl overflow-hidden ${color === "green" ? "border-green-500" : "border-yellow-500"}`}>
-          <div className={`p-6 ${color === "green" ? "bg-green-50" : "bg-yellow-50"}`}>
+        <div className={`bg-white border-l-8 shadow-lg rounded-xl overflow-hidden ${color === "green" ? "border-green-500" : color === "red" ? "border-red-500" : "border-yellow-500"}`}>
+          <div className={`p-6 ${color === "green" ? "bg-green-50" : color === "red" ? "bg-red-50" : "bg-yellow-50"}`}>
             <div className="flex items-center">
-              <div className={`p-3 rounded-full ${color === "green" ? "bg-green-100 text-green-600" : "bg-yellow-100 text-yellow-600"}`}>
+              <div className={`p-3 rounded-full ${color === "green" ? "bg-green-100 text-green-600" : color === "red" ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-600"}`}>
                 {getResultIcon(result.type)}
               </div>
               <div className="ml-4">
-                <h2 className={`text-xl font-bold ${color === "green" ? "text-green-800" : "text-yellow-800"}`}>
+                <h2 className={`text-xl font-bold ${color === "green" ? "text-green-800" : color === "red" ? "text-red-800" : "text-yellow-800"}`}>
                   {result.type === "verified" && "✅ พบข้อมูลในระบบ - ปลอดภัย"}
-                  {result.type === "unknown" && "⚠️ ไม่พบข้อมูลในระบบ - ควรระวัง"}
+                  {result.type === "scammer" && "❌ พบประวัติโกง - ระวัง!"}
+                  {result.type === "pending" && "⚠️ รอการยืนยัน - ควรระวัง"}
                 </h2>
               </div>
             </div>
           </div>
 
-          {result.type === "verified" && result.data && (
+          {result.data && (
             <div className="p-6">
               <div className="flex flex-col md:flex-row gap-6 mb-6">
                 <img
@@ -164,7 +169,7 @@ export default function SearchResultsPage() {
                       สมาชิกตั้งแต่ {result.data.joinDate}
                     </div>
                     <div className="flex items-center">
-                      <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                      <CheckCircle className={`h-4 w-4 mr-2 ${color === "green" ? "text-green-500" : color === "red" ? "text-red-500" : "text-yellow-500"}`} />
                       {result.data.verificationStatus}
                     </div>
                   </div>
@@ -206,7 +211,7 @@ export default function SearchResultsPage() {
 
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link href={`/agent/${result.data.id}`} className="flex-1">
-                  <Button className="w-full bg-green-600 hover:bg-green-700">
+                  <Button className={`w-full ${color === "red" ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}`}>
                     <Eye className="h-4 w-4 mr-2" />
                     ดูโปรไฟล์เต็ม
                   </Button>

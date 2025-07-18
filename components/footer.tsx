@@ -75,7 +75,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/coming-soon" className="text-gray-600 hover:text-teal-600 text-sm">
+                <Link href="/contact" className="text-gray-600 hover:text-teal-600 text-sm">
                   ติดต่อเรา
                 </Link>
               </li>
