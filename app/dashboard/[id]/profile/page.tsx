@@ -1,11 +1,12 @@
 "use client"
-import { useState } from "react"
+
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
@@ -16,7 +17,6 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
@@ -51,7 +51,6 @@ import { toast } from "@/components/ui/use-toast"
 export default function ProfileManagementPage() {
   const [activeTab, setActiveTab] = useState("basic")
   const [isEditing, setIsEditing] = useState(false)
-  // Update the formData structure to include arrays for multiple contact methods
   const [formData, setFormData] = useState({
     basic: {
       firstName: "",
@@ -95,17 +94,49 @@ export default function ProfileManagementPage() {
     accountName: "",
   })
 
+  // Fetch approvals from API
+  useEffect(() => {
+    const fetchApprovals = async () => {
+      try {
+        const response = await fetch('/api/agents/approvals');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        // Ensure pendingApprovals is always an array
+        const approvals = Array.isArray(data) ? data : data.status ? [{ status: data.status }] : [];
+        setFormData((prev) => ({
+          ...prev,
+          pendingApprovals: approvals,
+        }));
+      } catch (error) {
+        console.error('Error fetching approvals:', error);
+        toast({
+          title: "ไม่สามารถโหลดข้อมูลการอนุมัติ",
+          description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ",
+          variant: "destructive",
+        });
+        // Set empty array on error to prevent map issues
+        setFormData((prev) => ({
+          ...prev,
+          pendingApprovals: [],
+        }));
+      }
+    };
+    fetchApprovals();
+  }, []);
+
   const handleSaveDraft = () => {
     toast({
       title: "บันทึกร่างสำเร็จ",
       description: "ข้อมูลของคุณได้รับการบันทึกเป็นร่างแล้ว",
-    })
-  }
+    });
+  };
 
   const submitAgentProfile = async () => {
     try {
       const payload = {
-        name: `${formData.basic.firstName} ${formData.basic.lastName}`.trim(), // รวมชื่อ-นามสกุล
+        name: `${formData.basic.firstName} ${formData.basic.lastName}`.trim(),
         location: formData.basic.address,
         bio: formData.basic.bio,
         image_url: formData.basic.profileImage,
@@ -115,10 +146,10 @@ export default function ProfileManagementPage() {
         social_facebook: formData.marketing.facebookPages[0]?.url || "",
         instagram: formData.marketing.instagramAccounts[0]?.url || "",
         website: formData.marketing.websites[0]?.url || "",
-        specialties: formData.basic.specialties, // สมมุติว่า column นี้เป็น `text[]` ใน Supabase
-        banking: formData.banking, // ถ้า column นี้เป็น `jsonb` ก็ส่งได้ตรงๆ
-        status: "pending", // คุณอาจระบุ status เริ่มต้น
-      }
+        specialties: formData.basic.specialties,
+        banking: formData.banking,
+        status: "pending",
+      };
 
       const res = await fetch("/api/agents", {
         method: "POST",
@@ -126,38 +157,88 @@ export default function ProfileManagementPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
-      })
+      });
 
-      const result = await res.json()
+      const result = await res.json();
 
       if (!res.ok) {
-        throw new Error(result.error || "เกิดข้อผิดพลาดในการส่งข้อมูล")
+        throw new Error(result.error || "เกิดข้อผิดพลาดในการส่งข้อมูล");
       }
+
+      // Fetch updated approvals after submission
+      const fetchApprovals = async () => {
+        try {
+          const response = await fetch('/api/agents/approvals');
+          const data = await response.json();
+          // Ensure pendingApprovals is always an array
+          const approvals = Array.isArray(data) ? data : data.status ? [{ status: data.status }] : [];
+          setFormData((prev) => ({
+            ...prev,
+            pendingApprovals: approvals,
+          }));
+        } catch (error) {
+          console.error('Error fetching approvals after submission:', error);
+          // Set empty array on error
+          setFormData((prev) => ({
+            ...prev,
+            pendingApprovals: [],
+          }));
+        }
+      };
+      fetchApprovals();
 
       toast({
         title: "ส่งขออนุมัติสำเร็จ",
         description: "ข้อมูลของคุณถูกส่งเข้าสู่ระบบแล้ว",
-      })
+      });
     } catch (error) {
       toast({
         title: "เกิดข้อผิดพลาด",
         description: error instanceof Error ? error.message : "ไม่สามารถส่งข้อมูลได้",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "pending":
+        return (
+          <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+            <Clock className="w-3 h-3 mr-1" />
+            รอการอนุมัติ
+          </Badge>
+        );
+      case "verified":
+        return (
+          <Badge variant="outline" className="text-green-600 border-green-600">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            อนุมัติแล้ว
+          </Badge>
+        );
+      case "rejected":
+        return (
+          <Badge variant="outline" className="text-red-600 border-red-600">
+            <XCircle className="w-3 h-3 mr-1" />
+            ไม่อนุมัติ
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
 
   const handleSubmitForApproval = () => {
-    submitAgentProfile()
-  }
+    submitAgentProfile();
+  };
 
   const handleCopyProfileLink = () => {
-    navigator.clipboard.writeText(`https://checkteepak.com/agent/somchai-jaidee`)
+    navigator.clipboard.writeText(`https://checkteepak.com/agent/somchai-jaidee`);
     toast({
       title: "คัดลอกลิงก์สำเร็จ",
       description: "ลิงก์โปรไฟล์ได้รับการคัดลอกไปยังคลิปบอร์ดแล้ว",
-    })
-  }
+    });
+  };
 
   const addSpecialty = () => {
     if (newSpecialty.trim()) {
@@ -167,20 +248,20 @@ export default function ProfileManagementPage() {
           ...prev.basic,
           specialties: [...prev.basic.specialties, newSpecialty.trim()],
         },
-      }))
-      setNewSpecialty("")
+      }));
+      setNewSpecialty("");
     }
-  }
+  };
 
-  const removeSpecialty = (index: number) => {
+  const removeSpecialty = (index) => {
     setFormData((prev) => ({
       ...prev,
       basic: {
         ...prev.basic,
         specialties: prev.basic.specialties.filter((_, i) => i !== index),
       },
-    }))
-  }
+    }));
+  };
 
   const addBankAccount = () => {
     if (newBankAccount.bankName && newBankAccount.accountNumber && newBankAccount.accountName) {
@@ -194,55 +275,27 @@ export default function ProfileManagementPage() {
             isPrimary: prev.banking.length === 0,
           },
         ],
-      }))
-      setNewBankAccount({ bankName: "", accountNumber: "", accountName: "" })
+      }));
+      setNewBankAccount({ bankName: "", accountNumber: "", accountName: "" });
     }
-  }
+  };
 
-  const removeBankAccount = (id: number) => {
+  const removeBankAccount = (id) => {
     setFormData((prev) => ({
       ...prev,
       banking: prev.banking.filter((account) => account.id !== id),
-    }))
-  }
+    }));
+  };
 
-  const setPrimaryAccount = (id: number) => {
+  const setPrimaryAccount = (id) => {
     setFormData((prev) => ({
       ...prev,
       banking: prev.banking.map((account) => ({
         ...account,
         isPrimary: account.id === id,
       })),
-    }))
-  }
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return (
-          <Badge variant="outline" className="text-yellow-600 border-yellow-600">
-            <Clock className="w-3 h-3 mr-1" />
-            รอการอนุมัติ
-          </Badge>
-        )
-      case "approved":
-        return (
-          <Badge variant="outline" className="text-green-600 border-green-600">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            อนุมัติแล้ว
-          </Badge>
-        )
-      case "rejected":
-        return (
-          <Badge variant="outline" className="text-red-600 border-red-600">
-            <XCircle className="w-3 h-3 mr-1" />
-            ไม่อนุมัติ
-          </Badge>
-        )
-      default:
-        return null
-    }
-  }
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -267,14 +320,11 @@ export default function ProfileManagementPage() {
       </div>
 
       {/* Alert for pending approvals */}
-      {formData.pendingApprovals.some((item) => item.status === "pending") && (
+      {Array.isArray(formData.pendingApprovals) && formData.pendingApprovals.some((item) => item.status === "pending") && (
         <Card className="border-yellow-200 bg-yellow-50">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 text-yellow-800">
-              <AlertCircle className="w-5 h-5" />
-              <span className="font-medium">
-                คุณมีข้อมูล {formData.pendingApprovals.filter((item) => item.status === "pending").length} รายการ ที่รอการอนุมัติ
-              </span>
+              {/* เนื้อหา alert */}
             </div>
           </CardContent>
         </Card>
@@ -317,6 +367,7 @@ export default function ProfileManagementPage() {
                     </Button>
                   </div>
                 </div>
+
                 <div>
                   <Label className="text-base font-medium">รูปภาพหน้าปก</Label>
                   <div className="mt-2">
@@ -336,7 +387,9 @@ export default function ProfileManagementPage() {
                   </div>
                 </div>
               </div>
+
               <Separator />
+
               {/* Personal Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -366,6 +419,7 @@ export default function ProfileManagementPage() {
                   />
                 </div>
               </div>
+
               <div>
                 <Label htmlFor="address">ที่อยู่</Label>
                 <Textarea
@@ -380,6 +434,7 @@ export default function ProfileManagementPage() {
                   rows={3}
                 />
               </div>
+
               <div>
                 <Label htmlFor="bio">การแนะนำตัว</Label>
                 <Textarea
@@ -395,6 +450,7 @@ export default function ProfileManagementPage() {
                   placeholder="แนะนำตัวคุณให้ลูกค้าได้รู้จัก..."
                 />
               </div>
+
               {/* Specialties */}
               <div>
                 <Label className="text-base font-medium">ความเชี่ยวชาญ</Label>
@@ -454,12 +510,13 @@ export default function ProfileManagementPage() {
                           ...prev.contact,
                           phones: [...(prev.contact.phones || []), { value: "", verified: false, id: Date.now() }],
                         },
-                      }))
+                      }));
                     }}
                   >
                     <Plus className="w-4 h-4 mr-1" /> เพิ่มเบอร์โทรศัพท์
                   </Button>
                 </div>
+
                 {/* List of phone numbers */}
                 <div className="space-y-3">
                   {(formData.contact.phones || []).map((phone, index) => (
@@ -467,15 +524,15 @@ export default function ProfileManagementPage() {
                       <Input
                         value={phone.value}
                         onChange={(e) => {
-                          const updatedPhones = [...(formData.contact.phones || [])]
-                          updatedPhones[index].value = e.target.value
+                          const updatedPhones = [...(formData.contact.phones || [])];
+                          updatedPhones[index].value = e.target.value;
                           setFormData((prev) => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
                               phones: updatedPhones,
                             },
-                          }))
+                          }));
                         }}
                         placeholder="เบอร์โทรศัพท์"
                         className="flex-1"
@@ -495,14 +552,14 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedPhones = (formData.contact.phones || []).filter((_, i) => i !== index)
+                          const updatedPhones = (formData.contact.phones || []).filter((_, i) => i !== index);
                           setFormData((prev) => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
                               phones: updatedPhones,
                             },
-                          }))
+                          }));
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -511,7 +568,9 @@ export default function ProfileManagementPage() {
                   ))}
                 </div>
               </div>
+
               <Separator />
+
               {/* Email Addresses */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -529,12 +588,13 @@ export default function ProfileManagementPage() {
                           ...prev.contact,
                           emails: [...(prev.contact.emails || []), { value: "", verified: false, id: Date.now() }],
                         },
-                      }))
+                      }));
                     }}
                   >
                     <Plus className="w-4 h-4 mr-1" /> เพิ่มอีเมล
                   </Button>
                 </div>
+
                 {/* List of emails */}
                 <div className="space-y-3">
                   {(formData.contact.emails || []).map((email, index) => (
@@ -543,15 +603,15 @@ export default function ProfileManagementPage() {
                         type="email"
                         value={email.value}
                         onChange={(e) => {
-                          const updatedEmails = [...(formData.contact.emails || [])]
-                          updatedEmails[index].value = e.target.value
+                          const updatedEmails = [...(formData.contact.emails || [])];
+                          updatedEmails[index].value = e.target.value;
                           setFormData((prev) => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
                               emails: updatedEmails,
                             },
-                          }))
+                          }));
                         }}
                         placeholder="อีเมล"
                         className="flex-1"
@@ -571,14 +631,14 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedEmails = (formData.contact.emails || []).filter((_, i) => i !== index)
+                          const updatedEmails = (formData.contact.emails || []).filter((_, i) => i !== index);
                           setFormData((prev) => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
                               emails: updatedEmails,
                             },
-                          }))
+                          }));
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -587,7 +647,9 @@ export default function ProfileManagementPage() {
                   ))}
                 </div>
               </div>
+
               <Separator />
+
               {/* Line IDs */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -605,12 +667,13 @@ export default function ProfileManagementPage() {
                           ...prev.contact,
                           lineIds: [...(prev.contact.lineIds || []), { value: "", verified: false, id: Date.now() }],
                         },
-                      }))
+                      }));
                     }}
                   >
                     <Plus className="w-4 h-4 mr-1" /> เพิ่ม Line ID
                   </Button>
                 </div>
+
                 {/* List of Line IDs */}
                 <div className="space-y-3">
                   {(formData.contact.lineIds || []).map((lineId, index) => (
@@ -618,15 +681,15 @@ export default function ProfileManagementPage() {
                       <Input
                         value={lineId.value}
                         onChange={(e) => {
-                          const updatedLineIds = [...(formData.contact.lineIds || [])]
-                          updatedLineIds[index].value = e.target.value
+                          const updatedLineIds = [...(formData.contact.lineIds || [])];
+                          updatedLineIds[index].value = e.target.value;
                           setFormData((prev) => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
                               lineIds: updatedLineIds,
                             },
-                          }))
+                          }));
                         }}
                         placeholder="Line ID"
                         className="flex-1"
@@ -651,14 +714,14 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedLineIds = (formData.contact.lineIds || []).filter((_, i) => i !== index)
+                          const updatedLineIds = (formData.contact.lineIds || []).filter((_, i) => i !== index);
                           setFormData((prev) => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
                               lineIds: updatedLineIds,
                             },
-                          }))
+                          }));
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -667,6 +730,7 @@ export default function ProfileManagementPage() {
                   ))}
                 </div>
               </div>
+
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -716,12 +780,13 @@ export default function ProfileManagementPage() {
                             { url: "", verified: false, id: Date.now() },
                           ],
                         },
-                      }))
+                      }));
                     }}
                   >
                     <Plus className="w-4 h-4 mr-1" /> เพิ่ม Facebook Page
                   </Button>
                 </div>
+
                 {/* List of Facebook Pages */}
                 <div className="space-y-3">
                   {(formData.marketing.facebookPages || []).map((page, index) => (
@@ -729,15 +794,15 @@ export default function ProfileManagementPage() {
                       <Input
                         value={page.url}
                         onChange={(e) => {
-                          const updatedPages = [...(formData.marketing.facebookPages || [])]
-                          updatedPages[index].url = e.target.value
+                          const updatedPages = [...(formData.marketing.facebookPages || [])];
+                          updatedPages[index].url = e.target.value;
                           setFormData((prev) => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               facebookPages: updatedPages,
                             },
-                          }))
+                          }));
                         }}
                         placeholder="https://facebook.com/your-page"
                         className="flex-1"
@@ -757,14 +822,14 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedPages = (formData.marketing.facebookPages || []).filter((_, i) => i !== index)
+                          const updatedPages = (formData.marketing.facebookPages || []).filter((_, i) => i !== index);
                           setFormData((prev) => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               facebookPages: updatedPages,
                             },
-                          }))
+                          }));
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -773,7 +838,9 @@ export default function ProfileManagementPage() {
                   ))}
                 </div>
               </div>
+
               <Separator />
+
               {/* Instagram Accounts */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -794,12 +861,13 @@ export default function ProfileManagementPage() {
                             { url: "", verified: false, id: Date.now() },
                           ],
                         },
-                      }))
+                      }));
                     }}
                   >
                     <Plus className="w-4 h-4 mr-1" /> เพิ่ม Instagram
                   </Button>
                 </div>
+
                 {/* List of Instagram Accounts */}
                 <div className="space-y-3">
                   {(formData.marketing.instagramAccounts || []).map((account, index) => (
@@ -807,15 +875,15 @@ export default function ProfileManagementPage() {
                       <Input
                         value={account.url}
                         onChange={(e) => {
-                          const updatedAccounts = [...(formData.marketing.instagramAccounts || [])]
-                          updatedAccounts[index].url = e.target.value
+                          const updatedAccounts = [...(formData.marketing.instagramAccounts || [])];
+                          updatedAccounts[index].url = e.target.value;
                           setFormData((prev) => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               instagramAccounts: updatedAccounts,
                             },
-                          }))
+                          }));
                         }}
                         placeholder="https://instagram.com/your-account"
                         className="flex-1"
@@ -837,14 +905,14 @@ export default function ProfileManagementPage() {
                         onClick={() => {
                           const updatedAccounts = (formData.marketing.instagramAccounts || []).filter(
                             (_, i) => i !== index,
-                          )
+                          );
                           setFormData((prev) => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               instagramAccounts: updatedAccounts,
                             },
-                          }))
+                          }));
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -853,7 +921,9 @@ export default function ProfileManagementPage() {
                   ))}
                 </div>
               </div>
+
               <Separator />
+
               {/* Line OA */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -871,12 +941,13 @@ export default function ProfileManagementPage() {
                           ...prev.marketing,
                           lineOAs: [...(prev.marketing.lineOAs || []), { value: "", verified: false, id: Date.now() }],
                         },
-                      }))
+                      }));
                     }}
                   >
                     <Plus className="w-4 h-4 mr-1" /> เพิ่ม Line OA
                   </Button>
                 </div>
+
                 {/* List of Line OAs */}
                 <div className="space-y-3">
                   {(formData.marketing.lineOAs || []).map((lineOA, index) => (
@@ -884,15 +955,15 @@ export default function ProfileManagementPage() {
                       <Input
                         value={lineOA.value}
                         onChange={(e) => {
-                          const updatedLineOAs = [...(formData.marketing.lineOAs || [])]
-                          updatedLineOAs[index].value = e.target.value
+                          const updatedLineOAs = [...(formData.marketing.lineOAs || [])];
+                          updatedLineOAs[index].value = e.target.value;
                           setFormData((prev) => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               lineOAs: updatedLineOAs,
                             },
-                          }))
+                          }));
                         }}
                         placeholder="@your-line-oa"
                         className="flex-1"
@@ -912,14 +983,14 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedLineOAs = (formData.marketing.lineOAs || []).filter((_, i) => i !== index)
+                          const updatedLineOAs = (formData.marketing.lineOAs || []).filter((_, i) => i !== index);
                           setFormData((prev) => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               lineOAs: updatedLineOAs,
                             },
-                          }))
+                          }));
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -928,7 +999,9 @@ export default function ProfileManagementPage() {
                   ))}
                 </div>
               </div>
+
               <Separator />
+
               {/* Websites */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -946,12 +1019,13 @@ export default function ProfileManagementPage() {
                           ...prev.marketing,
                           websites: [...(prev.marketing.websites || []), { url: "", verified: false, id: Date.now() }],
                         },
-                      }))
+                      }));
                     }}
                   >
                     <Plus className="w-4 h-4 mr-1" /> เพิ่มเว็บไซต์
                   </Button>
                 </div>
+
                 {/* List of Websites */}
                 <div className="space-y-3">
                   {(formData.marketing.websites || []).map((website, index) => (
@@ -959,15 +1033,15 @@ export default function ProfileManagementPage() {
                       <Input
                         value={website.url}
                         onChange={(e) => {
-                          const updatedWebsites = [...(formData.marketing.websites || [])]
-                          updatedWebsites[index].url = e.target.value
+                          const updatedWebsites = [...(formData.marketing.websites || [])];
+                          updatedWebsites[index].url = e.target.value;
                           setFormData((prev) => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               websites: updatedWebsites,
                             },
-                          }))
+                          }));
                         }}
                         placeholder="https://your-website.com"
                         className="flex-1"
@@ -987,14 +1061,14 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedWebsites = (formData.marketing.websites || []).filter((_, i) => i !== index)
+                          const updatedWebsites = (formData.marketing.websites || []).filter((_, i) => i !== index);
                           setFormData((prev) => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               websites: updatedWebsites,
                             },
-                          }))
+                          }));
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1003,7 +1077,9 @@ export default function ProfileManagementPage() {
                   ))}
                 </div>
               </div>
+
               <Separator />
+
               {/* Other Marketing Channels */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -1021,12 +1097,13 @@ export default function ProfileManagementPage() {
                             { type: "", url: "", verified: false, id: Date.now() },
                           ],
                         },
-                      }))
+                      }));
                     }}
                   >
                     <Plus className="w-4 h-4 mr-1" /> เพิ่มช่องทาง
                   </Button>
                 </div>
+
                 {/* List of Other Channels */}
                 <div className="space-y-3">
                   {(formData.marketing.otherChannels || []).map((channel, index) => (
@@ -1034,15 +1111,15 @@ export default function ProfileManagementPage() {
                       <Select
                         value={channel.type}
                         onValueChange={(value) => {
-                          const updatedChannels = [...(formData.marketing.otherChannels || [])]
-                          updatedChannels[index].type = value
+                          const updatedChannels = [...(formData.marketing.otherChannels || [])];
+                          updatedChannels[index].type = value;
                           setFormData((prev) => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               otherChannels: updatedChannels,
                             },
-                          }))
+                          }));
                         }}
                       >
                         <SelectTrigger className="w-40">
@@ -1060,15 +1137,15 @@ export default function ProfileManagementPage() {
                         placeholder="URL หรือ ID"
                         value={channel.url}
                         onChange={(e) => {
-                          const updatedChannels = [...(formData.marketing.otherChannels || [])]
-                          updatedChannels[index].url = e.target.value
+                          const updatedChannels = [...(formData.marketing.otherChannels || [])];
+                          updatedChannels[index].url = e.target.value;
                           setFormData((prev) => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               otherChannels: updatedChannels,
                             },
-                          }))
+                          }));
                         }}
                         className="flex-1"
                       />
@@ -1087,14 +1164,14 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedChannels = (formData.marketing.otherChannels || []).filter((_, i) => i !== index)
+                          const updatedChannels = (formData.marketing.otherChannels || []).filter((_, i) => i !== index);
                           setFormData((prev) => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               otherChannels: updatedChannels,
                             },
-                          }))
+                          }));
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1103,6 +1180,7 @@ export default function ProfileManagementPage() {
                   ))}
                 </div>
               </div>
+
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -1190,7 +1268,9 @@ export default function ProfileManagementPage() {
                   </Card>
                 ))}
               </div>
+
               <Separator />
+
               {/* Add New Bank Account */}
               <div>
                 <Label className="text-base font-medium">เพิ่มบัญชีธนาคารใหม่</Label>
@@ -1293,7 +1373,9 @@ export default function ProfileManagementPage() {
                   </div>
                 </div>
               </div>
+
               <Separator />
+
               {/* Marketing Channels Visibility */}
               <div>
                 <h3 className="font-medium mb-4">ช่องทางการตลาด</h3>
@@ -1360,34 +1442,27 @@ export default function ProfileManagementPage() {
                   </div>
                 </div>
               </div>
+
               <Separator />
+
               {/* Banking Visibility */}
               <div>
                 <h3 className="font-medium mb-4">ข้อมูลการเงิน</h3>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4" />
-                    <span>ข้อมูลบัญชีธนาคาร</span>
-                  </div>
-                  <Switch
-                    checked={formData.visibility.showBanking}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        visibility: { ...prev.visibility, showBanking: checked },
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-blue-800">การแสดงผลโปรไฟล์</h4>
-                    <p className="text-sm text-blue-700 mt-1">
-                      การตั้งค่าเหล่านี้จะกำหนดว่าข้อมูลส่วนใดของคุณจะถูกแสดงต่อสาธารณะบนโปรไฟล์ของคุณ
-                    </p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4" />
+                      <span>ข้อมูลบัญชีธนาคาร</span>
+                    </div>
+                    <Switch
+                      checked={formData.visibility.showBanking}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          visibility: { ...prev.visibility, showBanking: checked },
+                        }))
+                      }
+                    />
                   </div>
                 </div>
               </div>
@@ -1403,37 +1478,64 @@ export default function ProfileManagementPage() {
                 <CheckCircle className="w-5 h-5" />
                 สถานะการอนุมัติ
               </CardTitle>
-              <CardDescription>ตรวจสอบสถานะการอนุมัติข้อมูลโปรไฟล์ของคุณ</CardDescription>
+              <CardDescription>ติดตามสถานะการอนุมัติข้อมูลที่คุณส่งไป</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {formData.pendingApprovals.length === 0 ? (
-                <div className="text-center py-10 text-gray-500">
-                  <p>ยังไม่มีรายการรอการอนุมัติ</p>
-                  <p className="mt-2">ข้อมูลโปรไฟล์ของคุณเป็นปัจจุบันแล้ว</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {formData.pendingApprovals.map((item, index) => (
-                    <Card key={index} className="flex items-center justify-between p-4">
-                      <div>
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-600">{item.description}</p>
+            <CardContent>
+              <div className="space-y-4">
+                {Array.isArray(formData.pendingApprovals) && formData.pendingApprovals.length > 0 ? (
+                  formData.pendingApprovals.map((item) => (
+                    <Card key={item.id} className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {item.type === "contact" && "ข้อมูลติดต่อ"}
+                              {item.type === "marketing" && "ช่องทางการตลาด"}
+                              {item.type === "basic" && "ข้อมูลพื้นฐาน"}
+                            </span>
+                            <span className="text-gray-500">- {item.field}</span>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            <p>
+                              <span className="font-medium">เดิม:</span> {item.oldValue || "ไม่มี"}
+                            </p>
+                            <p>
+                              <span className="font-medium">ใหม่:</span> {item.newValue || "ไม่มี"}
+                            </p>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            ส่งเมื่อ:{" "}
+                            {item.submittedAt
+                              ? new Date(item.submittedAt).toLocaleDateString("th-TH", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "ไม่ระบุ"}
+                          </div>
+                          {item.status === "rejected" && item.rejectionReason && (
+                            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                              <span className="font-medium">เหตุผลที่ไม่อนุมัติ:</span> {item.rejectionReason}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          {getStatusBadge(item.status)}
+                          {item.status === "rejected" && (
+                            <Button variant="outline" size="sm">
+                              <Edit className="w-3 h-3 mr-1" />
+                              แก้ไขใหม่
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      {getStatusBadge(item.status)}
                     </Card>
-                  ))}
-                </div>
-              )}
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-blue-800">กระบวนการอนุมัติ</h4>
-                    <p className="text-sm text-blue-700 mt-1">
-                      ข้อมูลบางส่วนที่คุณแก้ไขอาจต้องได้รับการตรวจสอบและอนุมัติโดยผู้ดูแลระบบก่อนที่จะแสดงผลบนโปรไฟล์สาธารณะของคุณ
-                    </p>
-                  </div>
-                </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">ไม่มีข้อมูลที่รอการอนุมัติ</div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1441,16 +1543,16 @@ export default function ProfileManagementPage() {
       </Tabs>
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-3">
-        <Button variant="outline" onClick={handleSaveDraft}>
+      <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t">
+        <Button onClick={handleSaveDraft} variant="outline" className="flex-1">
           <Save className="w-4 h-4 mr-2" />
           บันทึกร่าง
         </Button>
-        <Button onClick={handleSubmitForApproval}>
+        <Button onClick={handleSubmitForApproval} className="flex-1">
           <Send className="w-4 h-4 mr-2" />
-          ส่งเพื่อขออนุมัติ
+          ส่งขออนุมัติ
         </Button>
       </div>
     </div>
-  )
+  );
 }

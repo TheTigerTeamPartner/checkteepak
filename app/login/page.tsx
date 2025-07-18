@@ -19,6 +19,7 @@ export default function LoginPage() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const supabase = createClientComponentClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,8 +27,6 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const supabase = createClientComponentClient();
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
@@ -42,12 +41,32 @@ export default function LoginPage() {
 
       if (data.user) {
         console.log("Login successful, user:", data.user);
+
+        // ดึงข้อมูล role จากตาราง users
+        const { data: profile, error: profileError } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", data.user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Profile fetch error:", profileError.message);
+          setError("ไม่สามารถดึงข้อมูลผู้ใช้ได้");
+          setLoading(false);
+          return;
+        }
+
         // Set user type in local storage
-        localStorage.setItem("userType", "member");
-        // Redirect to the user's dashboard
-        router.push(`/dashboard/${data.user.id}`);
+        localStorage.setItem("userType", profile?.role || "member");
+
+        // Redirect ตาม role
+        if (profile?.role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push(`/dashboard/${data.user.id}`);
+        }
       } else {
-        // Fallback redirection if user data is not available for some reason
+        // Fallback redirection if user data is not available
         const redirectToParam = searchParams.get("redirectTo");
         const destination = redirectToParam && !redirectToParam.startsWith("/dashboard") ? redirectToParam : "/";
         router.push(destination);

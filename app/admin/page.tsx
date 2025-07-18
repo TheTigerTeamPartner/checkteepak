@@ -507,7 +507,7 @@ export default function AdminDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {["เลขบัญชีธนาคาร", "เบอร์โทรศัพท์", "ชื่อบุคคล", "ชื่อนายหน้า", "เลขบัตรประชาชน"].map((term, i) => (
+                  {["เลขบัญชีธนาคาร", "เบอร์โทรศัพท์", "ชื่อนายหน้า", "เลขบัตรประชาชน"].map((term, i) => (
                     <div key={i} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="bg-gray-100 w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center flex-shrink-0">

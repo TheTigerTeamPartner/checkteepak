@@ -70,7 +70,7 @@ interface AgentProfile {
 
 export default function AgentProfilePage() {
   const [agentData, setAgentData] = useState<AgentProfile | null>(null)
-  const [loading, setLoading] = useState(true)
+const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const params = useParams()
   const agentId = params.id
@@ -85,8 +85,8 @@ export default function AgentProfilePage() {
     const fetchAgentData = async () => {
       try {
         setLoading(true)
-
-
+      
+        
         const { data, error } = await supabase
           .from('agents')
           .select('*')
@@ -108,7 +108,7 @@ export default function AgentProfilePage() {
           setError(`No agent found with ID: ${agentId}`)
           return
         }
-
+      
         setAgentData(data)
       } catch (err) {
         console.error('Unexpected error:', err)
@@ -128,6 +128,7 @@ export default function AgentProfilePage() {
   const copyContact = (type: string, value: string) => {
     navigator.clipboard.writeText(value)
   }
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Cover Image */}
@@ -141,7 +142,7 @@ export default function AgentProfilePage() {
         <div className="absolute inset-0 bg-gradient-to-r from-teal-600/30 to-blue-600/30" />
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 -mt-16 md:-mt-20 lg:-mt-24 relative z-10 pb-16">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 -mt-16 md:-mt-20 lg:-mt-24 relative z-10">
         {/* Profile Header */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8 mb-8">
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-8">
@@ -385,7 +386,7 @@ export default function AgentProfilePage() {
                     </Badge>
                   )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-blue-100">
-                    <a href={agentData?.social_facebook} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.social_facebook} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -415,7 +416,7 @@ export default function AgentProfilePage() {
                     </Badge>
                   )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-pink-100">
-                    <a href={agentData?.instagram} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.instagram} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -445,7 +446,7 @@ export default function AgentProfilePage() {
                     </Badge>
                   )}
                   <Button variant="outline" size="sm" asChild className="hover:bg-gray-100">
-                    <a href={agentData?.website} target="_blank" rel="noopener noreferrer">
+                  <a href={agentData?.website} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -465,40 +466,45 @@ export default function AgentProfilePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {agentData?.banking?.map((account) => (
-                <div
-                  key={account.id}
-                  className="flex flex-col md:flex-row md:items-center md:justify-between p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-white rounded-lg shadow-sm">
-                      <CreditCard className="h-5 w-5 text-gray-600" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-800">{account.bankName}</div>
-                      <div className="text-sm md:text-base text-gray-600">
-                        {account.accountNumber} - {account.accountName}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 mt-3 md:mt-0">
-                    {account.isPrimary && (
-                      <Badge variant="default" className="bg-teal-600 hover:bg-teal-700 text-white">
-                        บัญชีหลัก
-                      </Badge>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyContact("account", account.accountNumber)}
-                      className="hover:bg-green-100"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
+  {Array.isArray(agentData?.banking) && agentData.banking.length > 0 ? (
+    agentData.banking.map((account) => (
+      <div
+        key={account.id}
+        className="flex flex-col md:flex-row md:items-center md:justify-between p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200"
+      >
+        <div className="flex items-center gap-4">
+          <div className="p-2 bg-white rounded-lg shadow-sm">
+            <CreditCard className="h-5 w-5 text-gray-600" />
+          </div>
+          <div>
+            <div className="font-semibold text-gray-800">{account.bank_name}</div>
+            <div className="text-sm md:text-base text-gray-600">
+              {account.account_number} - {account.account_name}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 mt-3 md:mt-0">
+          {account.is_primary && (
+            <Badge variant="default" className="bg-teal-600 hover:bg-teal-700 text-white">
+              บัญชีหลัก
+            </Badge>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => copyContact("account", account.account_number)}
+            className="hover:bg-green-100"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    ))
+  ) : (
+    <p className="text-gray-600">ไม่มีข้อมูลบัญชีธนาคาร</p>
+  )}
+</CardContent>
+
           </Card>
 
           {/* Warning Section */}
