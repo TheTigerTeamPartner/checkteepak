@@ -30,6 +30,7 @@ export default function ReportPage() {
     tiktokProfile: "",
     websiteUrl: "",
     otherSocialMedia: "",
+    cheaterName: "", 
   })
 
   const [uploadedFiles, setUploadedFiles] = useState({
@@ -361,6 +362,14 @@ export default function ReportPage() {
                 required
               />
             </div>
+            <div>
+            <Label>ชื่อผู้ที่โกง</Label>
+            <Input
+              value={formData.cheaterName}
+              onChange={(e) => setFormData((prev) => ({ ...prev, cheaterName: e.target.value }))}
+              placeholder="ชื่อผู้ที่โกง"
+            />
+          </div>
           </CardContent>
         </Card>
 

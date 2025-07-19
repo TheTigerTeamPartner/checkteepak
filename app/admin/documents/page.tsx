@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -30,131 +30,68 @@ import {
   Calendar,
   MapPin,
 } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
-interface MemberData {
+interface AgentData {
   id: string
   name: string
   email: string
   phone: string
-  type: "agent" | "owner" | "user"
-  submitDate: string
-  status: "pending" | "approved" | "rejected" | "incomplete"
-  avatar: string
   location: string
-  pendingItems: string[]
-  contactInfo: {
-    phones: { value: string; verified: boolean }[]
-    emails: { value: string; verified: boolean }[]
-    lineIds: { value: string; verified: boolean }[]
-  }
-  socialMedia: {
-    facebook: string
-    instagram: string
-    lineOA: string
-    website: string
-  }
-  businessInfo: {
-    businessLicense: { status: string; url?: string }
-    bankAccount: { status: string; bankName: string; accountNumber: string }
-  }
+  status: "pending" | "verified" | "scammer"
+  submitted_at: string
+  social_facebook: string
+  instagram: string
+  line_id: string
+  website: string
+  banking: { bankName: string; accountNumber: string; status: string } | null
 }
 
 export default function DocumentsPage() {
-  const [selectedMember, setSelectedMember] = useState<MemberData | null>(null)
+  const [agents, setAgents] = useState<AgentData[]>([])
+  const [selectedAgent, setSelectedAgent] = useState<AgentData | null>(null)
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [rejectionReason, setRejectionReason] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
 
-  // Mock data
-  const members: MemberData[] = [
-    {
-      id: "1",
-      name: "คุณสมชาย ใจดี",
-      email: "somchai@example.com",
-      phone: "081-234-5678",
-      type: "agent",
-      submitDate: "2024-03-15",
-      status: "pending",
-      avatar: "/placeholder.svg?height=40&width=40",
-      location: "เชียงใหม่",
-      pendingItems: ["ข้อมูลติดต่อ", "Social Media", "เอกสารทางกฎหมาย"],
-      contactInfo: {
-        phones: [
-          { value: "081-234-5678", verified: true },
-          { value: "082-345-6789", verified: false },
-        ],
-        emails: [{ value: "somchai@example.com", verified: true }],
-        lineIds: [{ value: "somchai_agent", verified: false }],
-      },
-      socialMedia: {
-        facebook: "https://facebook.com/somchai.agent",
-        instagram: "https://instagram.com/somchai_agent",
-        lineOA: "@somchai_agent",
-        website: "https://somchai-agent.com",
-      },
-      businessInfo: {
-        businessLicense: { status: "pending", url: "/placeholder.svg" },
-        bankAccount: { status: "approved", bankName: "ธนาคารกสิกรไทย", accountNumber: "123-4-56789-0" },
-      },
-    },
-    {
-      id: "2",
-      name: "คุณมาลี สวยงาม",
-      email: "malee@example.com",
-      phone: "082-345-6789",
-      type: "owner",
-      submitDate: "2024-03-14",
-      status: "approved",
-      avatar: "/placeholder.svg?height=40&width=40",
-      location: "ภูเก็ต",
-      pendingItems: [],
-      contactInfo: {
-        phones: [{ value: "082-345-6789", verified: true }],
-        emails: [{ value: "malee@example.com", verified: true }],
-        lineIds: [{ value: "malee_owner", verified: true }],
-      },
-      socialMedia: {
-        facebook: "https://facebook.com/malee.owner",
-        instagram: "https://instagram.com/malee_owner",
-        lineOA: "@malee_owner",
-        website: "",
-      },
-      businessInfo: {
-        businessLicense: { status: "approved", url: "/placeholder.svg" },
-        bankAccount: { status: "approved", bankName: "ธนาคารกรุงเทพ", accountNumber: "456-7-89012-3" },
-      },
-    },
-    {
-      id: "3",
-      name: "คุณวิชัย ท่องเที่ยว",
-      email: "wichai@example.com",
-      phone: "083-456-7890",
-      type: "agent",
-      submitDate: "2024-03-13",
-      status: "rejected",
-      avatar: "/placeholder.svg?height=40&width=40",
-      location: "กรุงเทพฯ",
-      pendingItems: ["ข้อมูลติดต่อ", "เอกสารทางกฎหมาย"],
-      contactInfo: {
-        phones: [{ value: "083-456-7890", verified: false }],
-        emails: [{ value: "wichai@example.com", verified: true }],
-        lineIds: [{ value: "wichai_agent", verified: false }],
-      },
-      socialMedia: {
-        facebook: "",
-        instagram: "",
-        lineOA: "",
-        website: "",
-      },
-      businessInfo: {
-        businessLicense: { status: "rejected", url: "/placeholder.svg" },
-        bankAccount: { status: "pending", bankName: "ธนาคารไทยพาณิชย์", accountNumber: "789-0-12345-6" },
-      },
-    },
-  ]
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const response = await fetch("/api/agents/approvals?full=true")
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        const { data } = await response.json()
+        console.log("Fetched agents:", data) // Log เพื่อตรวจสอบข้อมูล
+        const formattedAgents = data.map((agent: any) => ({
+          id: agent.id,
+          name: agent.name || "ไม่ระบุชื่อ",
+          email: agent.email || "",
+          phone: agent.phone || "",
+          location: agent.location || "",
+          status: agent.status || "pending",
+          submitted_at: agent.submitted_at || new Date().toISOString().split("T")[0],
+          social_facebook: agent.social_facebook || "",
+          instagram: agent.instagram || "",
+          line_id: agent.line_id || "",
+          website: agent.website || "",
+          banking: agent.banking || { bankName: "", accountNumber: "", status: "pending" },
+        }))
+        setAgents(formattedAgents)
+      } catch (error) {
+        toast({
+          title: "เกิดข้อผิดพลาด",
+          description: "ไม่สามารถโหลดข้อมูลสมาชิกได้ กรุณาลองใหม่อีกครั้ง",
+          variant: "destructive",
+        })
+        console.error("Fetch error:", error)
+      }
+    }
+    fetchAgents()
+  }, [toast])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "approved":
+      case "verified":
         return (
           <Badge className="bg-green-500 hover:bg-green-600">
             <CheckCircle className="h-3 w-3 mr-1" />
@@ -168,58 +105,102 @@ export default function DocumentsPage() {
             รอการตรวจสอบ
           </Badge>
         )
-      case "rejected":
+      case "scammer":
         return (
           <Badge className="bg-red-500 hover:bg-red-600">
             <XCircle className="h-3 w-3 mr-1" />
             ไม่อนุมัติ
           </Badge>
         )
-      case "incomplete":
+      default:
         return (
           <Badge className="bg-orange-500 hover:bg-orange-600">
             <AlertCircle className="h-3 w-3 mr-1" />
             ข้อมูลไม่ครบ
           </Badge>
         )
-      default:
-        return null
     }
   }
 
-  const getTypeBadge = (type: string) => {
-    switch (type) {
-      case "agent":
-        return (
-          <Badge variant="outline" className="bg-blue-50 text-blue-700">
-            นายหน้า
-          </Badge>
-        )
-      case "owner":
-        return (
-          <Badge variant="outline" className="bg-green-50 text-green-700">
-            เจ้าของบ้าน
-          </Badge>
-        )
-      case "user":
-        return (
-          <Badge variant="outline" className="bg-gray-50 text-gray-700">
-            ผู้ใช้ทั่วไป
-          </Badge>
-        )
-      default:
-        return null
-    }
-  }
+  const getTypeBadge = () => (
+    <Badge variant="outline" className="bg-blue-50 text-blue-700">
+      นายหน้า
+    </Badge>
+  )
 
-  const handleViewDetails = (member: MemberData) => {
-    setSelectedMember(member)
+  const handleViewDetails = (agent: AgentData) => {
+    setSelectedAgent(agent)
     setIsDetailDialogOpen(true)
   }
 
-  const handleCallMember = (phone: string) => {
+  const handleCallAgent = (phone: string) => {
     window.open(`tel:${phone}`, "_self")
   }
+
+  const handleApproveAll = async () => {
+    if (!selectedAgent) return;
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/agents/${selectedAgent.id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "verified" }),
+        credentials: "include", // รับประกันการส่ง cookie
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+      const updatedData = await response.json();
+      console.log("API Response:", updatedData); // Log เพื่อตรวจสอบ
+      const updatedAgent = { ...selectedAgent, status: "verified" };
+      setSelectedAgent(updatedAgent);
+      setAgents(agents.map(a => a.id === selectedAgent.id ? updatedAgent : a));
+      toast({ title: "สำเร็จ", description: "อนุมัติข้อมูลทั้งหมดเรียบร้อยแล้ว", variant: "success" });
+    } catch (error) {
+      console.error("Approve error:", error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: `ไม่สามารถอนุมัติได้ กรุณาลองใหม่อีกครั้ง (${error.message})`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleReject = async () => {
+    if (!selectedAgent) return;
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/agents/${selectedAgent.id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "scammer", reason: rejectionReason }),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+      const updatedData = await response.json();
+      console.log("API Response:", updatedData);
+      const updatedAgent = { ...selectedAgent, status: "scammer" };
+      setSelectedAgent(updatedAgent);
+      setAgents(agents.map(a => a.id === selectedAgent.id ? updatedAgent : a));
+      toast({ title: "สำเร็จ", description: `ไม่อนุมัติข้อมูลเรียบร้อยแล้ว เหตุผล: ${rejectionReason || "ไม่ระบุ"}`, variant: "success" });
+      setRejectionReason("");
+    } catch (error) {
+      console.error("Reject error:", error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: `ไม่สามารถไม่อนุมัติได้ กรุณาลองใหม่อีกครั้ง (${error.message})`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -240,7 +221,6 @@ export default function DocumentsPage() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -248,7 +228,7 @@ export default function DocumentsPage() {
             <Clock className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">15</div>
+            <div className="text-2xl font-bold">{agents.filter(a => a.status === "pending").length}</div>
             <p className="text-xs text-muted-foreground">+3 สมาชิกใหม่วันนี้</p>
           </CardContent>
         </Card>
@@ -258,7 +238,7 @@ export default function DocumentsPage() {
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">89</div>
+            <div className="text-2xl font-bold">{agents.filter(a => a.status === "verified").length}</div>
             <p className="text-xs text-muted-foreground">+12 สมาชิกในสัปดาห์นี้</p>
           </CardContent>
         </Card>
@@ -268,7 +248,7 @@ export default function DocumentsPage() {
             <XCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{agents.filter(a => a.status === "scammer").length}</div>
             <p className="text-xs text-muted-foreground">-1 จากสัปดาห์ที่แล้ว</p>
           </CardContent>
         </Card>
@@ -278,13 +258,12 @@ export default function DocumentsPage() {
             <AlertCircle className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">รอการส่งข้อมูลเพิ่มเติม</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabs and Content */}
       <Tabs defaultValue="all" className="space-y-4">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <TabsList>
@@ -307,9 +286,8 @@ export default function DocumentsPage() {
               <SelectContent>
                 <SelectItem value="all">ทุกสถานะ</SelectItem>
                 <SelectItem value="pending">รอการตรวจสอบ</SelectItem>
-                <SelectItem value="approved">อนุมัติแล้ว</SelectItem>
-                <SelectItem value="rejected">ไม่อนุมัติ</SelectItem>
-                <SelectItem value="incomplete">ข้อมูลไม่ครบ</SelectItem>
+                <SelectItem value="verified">อนุมัติแล้ว</SelectItem>
+                <SelectItem value="scammer">ไม่อนุมัติ</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" size="icon">
@@ -326,63 +304,57 @@ export default function DocumentsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {members.map((member) => (
+                {agents.map((agent) => (
                   <div
-                    key={member.id}
+                    key={agent.id}
                     className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full overflow-hidden">
                         <img
-                          src={member.avatar || "/placeholder.svg"}
-                          alt={member.name}
+                          src="/placeholder.svg"
+                          alt={agent.name}
                           className="w-full h-full object-cover"
                         />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium text-gray-900">{member.name}</h3>
-                          {getTypeBadge(member.type)}
-                          {getStatusBadge(member.status)}
+                          <h3 className="font-medium text-gray-900">{agent.name}</h3>
+                          {getTypeBadge()}
+                          {getStatusBadge(agent.status)}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <Mail className="h-3 w-3" />
-                            <span>{member.email}</span>
+                            <span>{agent.email}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Phone className="h-3 w-3" />
-                            <span>{member.phone}</span>
+                            <span>{agent.phone}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
-                            <span>{member.location}</span>
+                            <span>{agent.location}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            <span>ส่งเมื่อ: {member.submitDate}</span>
+                            <span>ส่งเมื่อ: {agent.submitted_at}</span>
                           </div>
-                          {member.pendingItems.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              <AlertCircle className="h-3 w-3" />
-                              <span>รอตรวจสอบ: {member.pendingItems.join(", ")}</span>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleViewDetails(member)}>
+                      <Button size="sm" variant="outline" onClick={() => handleViewDetails(agent)}>
                         <Eye className="h-4 w-4 mr-1" />
                         ดูรายละเอียด
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleCallMember(member.phone)}
+                        onClick={() => handleCallAgent(agent.phone)}
                         className="text-blue-600 border-blue-300 hover:bg-blue-50"
                       >
                         <Phone className="h-4 w-4 mr-1" />
@@ -396,15 +368,38 @@ export default function DocumentsPage() {
           </Card>
         </TabsContent>
 
-        {/* Other tabs content */}
         <TabsContent value="contact-info" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>ข้อมูลติดต่อ</CardTitle>
-              <CardDescription>เบอร์โทรศัพท์ อีเมล และ Line ID ของสมาชิก</CardDescription>
+              <CardDescription>เบอร์โทรศัพท์ อีเมล และ Line ID</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">แสดงเฉพาะสมาชิกที่มีข้อมูลติดต่อรอการตรวจสอบ</p>
+              {selectedAgent && (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">เบอร์โทรศัพท์</h4>
+                    <div className="flex items-center justify-between p-2 border rounded">
+                      <span>{selectedAgent.phone}</span>
+                      <Badge variant="outline">รอยืนยัน</Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">อีเมล</h4>
+                    <div className="flex items-center justify-between p-2 border rounded">
+                      <span>{selectedAgent.email}</span>
+                      <Badge variant="outline">รอยืนยัน</Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Line ID</h4>
+                    <div className="flex items-center justify-between p-2 border rounded">
+                      <span>{selectedAgent.line_id}</span>
+                      <Badge variant="outline">รอยืนยัน</Badge>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -413,10 +408,33 @@ export default function DocumentsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Social Media</CardTitle>
-              <CardDescription>Facebook, Instagram, Line OA และช่องทางโซเชียลมีเดียอื่นๆ</CardDescription>
+              <CardDescription>Facebook, Instagram, Line, Website</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">แสดงเฉพาะสมาชิกที่มี Social Media รอการตรวจสอบ</p>
+              {selectedAgent && (
+                <div className="space-y-4">
+                  {[
+                    { platform: "facebook", value: selectedAgent.social_facebook },
+                    { platform: "instagram", value: selectedAgent.instagram },
+                    { platform: "lineOA", value: selectedAgent.line_id },
+                    { platform: "website", value: selectedAgent.website },
+                  ].map(({ platform, value }) => (
+                    <div key={platform} className="flex items-center justify-between p-2 border rounded">
+                      <div className="flex items-center gap-2">
+                        {platform === "facebook" && <Facebook className="h-4 w-4" />}
+                        {platform === "instagram" && <Instagram className="h-4 w-4" />}
+                        {platform === "lineOA" && <MessageCircle className="h-4 w-4" />}
+                        {platform === "website" && <Globe className="h-4 w-4" />}
+                        <span className="capitalize">{platform}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">{value || "ไม่ได้ระบุ"}</span>
+                        {value && <Button size="sm" variant="outline">อนุมัติ</Button>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -425,10 +443,10 @@ export default function DocumentsPage() {
           <Card>
             <CardHeader>
               <CardTitle>ช่องทางการตลาด</CardTitle>
-              <CardDescription>เว็บไซต์ และช่องทางการตลาดออนไลน์อื่นๆ</CardDescription>
+              <CardDescription>ข้อมูลการตลาด</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">แสดงเฉพาะสมาชิกที่มีช่องทางการตลาดรอการตรวจสอบ</p>
+              <p className="text-sm text-muted-foreground">ยังไม่มีข้อมูลการตลาด</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -437,10 +455,10 @@ export default function DocumentsPage() {
           <Card>
             <CardHeader>
               <CardTitle>เอกสารทางกฎหมาย</CardTitle>
-              <CardDescription>ใบอนุญาตประกอบธุรกิจ และเอกสารทางกฎหมายอื่นๆ</CardDescription>
+              <CardDescription>ใบรับรอง</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">แสดงเฉพาะสมาชิกที่มีเอกสารทางกฎหมายรอการตรวจสอบ</p>
+              <p className="text-sm text-muted-foreground">ยังไม่มีข้อมูลเอกสาร</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -449,57 +467,62 @@ export default function DocumentsPage() {
           <Card>
             <CardHeader>
               <CardTitle>ช่องทางการชำระเงิน</CardTitle>
-              <CardDescription>บัญชีธนาคาร และช่องทางการรับชำระเงินอื่นๆ</CardDescription>
+              <CardDescription>บัญชีธนาคาร</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">แสดงเฉพาะสมาชิกที่มีข้อมูลการชำระเงินรอการตรวจสอบ</p>
+              {selectedAgent && selectedAgent.banking && (
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    <div>
+                      <h4 className="font-medium">บัญชีธนาคาร</h4>
+                      <p className="text-sm text-gray-600">
+                        {selectedAgent.banking.bankName} - {selectedAgent.banking.accountNumber}
+                      </p>
+                      <p className="text-sm text-gray-600">สถานะ: {selectedAgent.banking.status}</p>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline">อนุมัติ</Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Member Detail Dialog */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>รายละเอียดข้อมูลสมาชิก</DialogTitle>
             <DialogDescription>ตรวจสอบและอนุมัติข้อมูลองค์ประกอบต่างๆ ของสมาชิก</DialogDescription>
           </DialogHeader>
-
-          {selectedMember && (
+          {selectedAgent && (
             <div className="space-y-6">
-              {/* Member Info */}
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                 <div className="w-16 h-16 rounded-full overflow-hidden">
-                  <img
-                    src={selectedMember.avatar || "/placeholder.svg"}
-                    alt={selectedMember.name}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src="/placeholder.svg" alt={selectedAgent.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold">{selectedMember.name}</h3>
+                  <h3 className="text-xl font-bold">{selectedAgent.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
-                    {getTypeBadge(selectedMember.type)}
-                    {getStatusBadge(selectedMember.status)}
+                    {getTypeBadge()}
+                    {getStatusBadge(selectedAgent.status)}
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
-                    <span>{selectedMember.email}</span>
-                    <span>{selectedMember.phone}</span>
-                    <span>{selectedMember.location}</span>
+                    <span>{selectedAgent.email}</span>
+                    <span>{selectedAgent.phone}</span>
+                    <span>{selectedAgent.location}</span>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCallMember(selectedMember.phone)}
-                    className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                  >
-                    <Phone className="h-4 w-4 mr-1" />
-                    โทรติดต่อ
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleCallAgent(selectedAgent.phone)}
+                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                >
+                  <Phone className="h-4 w-4 mr-1" />
+                  โทรติดต่อ
+                </Button>
               </div>
 
               <Tabs defaultValue="contact" className="w-full">
@@ -510,71 +533,39 @@ export default function DocumentsPage() {
                   <TabsTrigger value="legal">เอกสารกฎหมาย</TabsTrigger>
                   <TabsTrigger value="payment">การชำระเงิน</TabsTrigger>
                 </TabsList>
-
-                <TabsContent value="contact" className="space-y-4">
+                <TabsContent value="contact">
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium mb-2">เบอร์โทรศัพท์</h4>
-                      {selectedMember.contactInfo.phones.map((phone, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 border rounded">
-                          <span>{phone.value}</span>
-                          <div className="flex items-center gap-2">
-                            {phone.verified ? (
-                              <Badge className="bg-green-500">ยืนยันแล้ว</Badge>
-                            ) : (
-                              <Badge variant="outline">รอยืนยัน</Badge>
-                            )}
-                            <Button size="sm" variant="outline">
-                              {phone.verified ? "อนุมัติ" : "ยืนยัน"}
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                      <div className="flex items-center justify-between p-2 border rounded">
+                        <span>{selectedAgent.phone}</span>
+                        <Badge variant="outline">รอยืนยัน</Badge>
+                      </div>
                     </div>
-
                     <div>
                       <h4 className="font-medium mb-2">อีเมล</h4>
-                      {selectedMember.contactInfo.emails.map((email, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 border rounded">
-                          <span>{email.value}</span>
-                          <div className="flex items-center gap-2">
-                            {email.verified ? (
-                              <Badge className="bg-green-500">ยืนยันแล้ว</Badge>
-                            ) : (
-                              <Badge variant="outline">รอยืนยัน</Badge>
-                            )}
-                            <Button size="sm" variant="outline">
-                              {email.verified ? "อนุมัติ" : "ยืนยัน"}
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                      <div className="flex items-center justify-between p-2 border rounded">
+                        <span>{selectedAgent.email}</span>
+                        <Badge variant="outline">รอยืนยัน</Badge>
+                      </div>
                     </div>
-
                     <div>
                       <h4 className="font-medium mb-2">Line ID</h4>
-                      {selectedMember.contactInfo.lineIds.map((lineId, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 border rounded">
-                          <span>{lineId.value}</span>
-                          <div className="flex items-center gap-2">
-                            {lineId.verified ? (
-                              <Badge className="bg-green-500">ยืนยันแล้ว</Badge>
-                            ) : (
-                              <Badge variant="outline">รอยืนยัน</Badge>
-                            )}
-                            <Button size="sm" variant="outline">
-                              {lineId.verified ? "อนุมัติ" : "ยืนยัน"}
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                      <div className="flex items-center justify-between p-2 border rounded">
+                        <span>{selectedAgent.line_id}</span>
+                        <Badge variant="outline">รอยืนยัน</Badge>
+                      </div>
                     </div>
                   </div>
                 </TabsContent>
-
-                <TabsContent value="social" className="space-y-4">
+                <TabsContent value="social">
                   <div className="space-y-4">
-                    {Object.entries(selectedMember.socialMedia).map(([platform, url]) => (
+                    {[
+                      { platform: "facebook", value: selectedAgent.social_facebook },
+                      { platform: "instagram", value: selectedAgent.instagram },
+                      { platform: "lineOA", value: selectedAgent.line_id },
+                      { platform: "website", value: selectedAgent.website },
+                    ].map(({ platform, value }) => (
                       <div key={platform} className="flex items-center justify-between p-2 border rounded">
                         <div className="flex items-center gap-2">
                           {platform === "facebook" && <Facebook className="h-4 w-4" />}
@@ -584,81 +575,50 @@ export default function DocumentsPage() {
                           <span className="capitalize">{platform}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">{url || "ไม่ได้ระบุ"}</span>
-                          {url && (
-                            <Button size="sm" variant="outline">
-                              อนุมัติ
-                            </Button>
-                          )}
+                          <span className="text-sm text-gray-600">{value || "ไม่ได้ระบุ"}</span>
+                          {value && <Button size="sm" variant="outline">อนุมัติ</Button>}
                         </div>
                       </div>
                     ))}
                   </div>
                 </TabsContent>
-
-                <TabsContent value="marketing" className="space-y-4">
+                <TabsContent value="marketing">
                   <div className="space-y-4">
                     <div className="p-4 border rounded-lg">
                       <h4 className="font-medium mb-2">ช่องทางการตลาดออนไลน์</h4>
-                      <p className="text-sm text-gray-600">ข้อมูลช่องทางการตลาดของสมาชิกจะแสดงที่นี่</p>
+                      <p className="text-sm text-gray-600">ยังไม่มีข้อมูล</p>
                     </div>
                   </div>
                 </TabsContent>
-
-                <TabsContent value="legal" className="space-y-4">
+                <TabsContent value="legal">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Building className="h-5 w-5" />
-                        <div>
-                          <h4 className="font-medium">ใบอนุญาตประกอบธุรกิจ</h4>
-                          <p className="text-sm text-gray-600">
-                            สถานะ: {selectedMember.businessInfo.businessLicense.status}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {selectedMember.businessInfo.businessLicense.url && (
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-4 w-4 mr-1" />
-                            ดูเอกสาร
-                          </Button>
-                        )}
-                        <Button size="sm" variant="outline">
-                          อนุมัติ
-                        </Button>
-                      </div>
+                    <div className="p-4 border rounded-lg">
+                      <h4 className="font-medium mb-2">ใบรับรอง</h4>
+                      <p className="text-sm text-gray-600">ยังไม่มีข้อมูล</p>
                     </div>
                   </div>
                 </TabsContent>
-
-                <TabsContent value="payment" className="space-y-4">
+                <TabsContent value="payment">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-5 w-5" />
-                        <div>
-                          <h4 className="font-medium">บัญชีธนาคาร</h4>
-                          <p className="text-sm text-gray-600">
-                            {selectedMember.businessInfo.bankAccount.bankName} -{" "}
-                            {selectedMember.businessInfo.bankAccount.accountNumber}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            สถานะ: {selectedMember.businessInfo.bankAccount.status}
-                          </p>
+                    {selectedAgent.banking && (
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-5 w-5" />
+                          <div>
+                            <h4 className="font-medium">บัญชีธนาคาร</h4>
+                            <p className="text-sm text-gray-600">
+                              {selectedAgent.banking.bankName} - {selectedAgent.banking.accountNumber}
+                            </p>
+                            <p className="text-sm text-gray-600">สถานะ: {selectedAgent.banking.status}</p>
+                          </div>
                         </div>
+                        <Button size="sm" variant="outline">อนุมัติ</Button>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline">
-                          อนุมัติ
-                        </Button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>
 
-              {/* Actions */}
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="rejection-reason">หมายเหตุ/เหตุผลการไม่อนุมัติ (ถ้ามี)</Label>
@@ -669,20 +629,29 @@ export default function DocumentsPage() {
                     onChange={(e) => setRejectionReason(e.target.value)}
                   />
                 </div>
-
                 <div className="flex gap-2 pt-4 border-t">
-                  <Button className="bg-green-600 hover:bg-green-700">
+                  <Button
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={handleApproveAll}
+                    disabled={isLoading}
+                  >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     อนุมัติทั้งหมด
                   </Button>
-                  <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50">
+                  <Button
+                    variant="outline"
+                    className="text-red-600 border-red-300 hover:bg-red-50"
+                    onClick={handleReject}
+                    disabled={isLoading}
+                  >
                     <XCircle className="h-4 w-4 mr-2" />
                     ไม่อนุมัติ
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => handleCallMember(selectedMember.phone)}
+                    onClick={() => handleCallAgent(selectedAgent.phone)}
                     className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                    disabled={isLoading}
                   >
                     <Phone className="h-4 w-4 mr-2" />
                     โทรติดต่อสมาชิก
