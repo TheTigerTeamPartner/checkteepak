@@ -178,26 +178,6 @@ export default function Component() {
               </div>
             </CardContent>
           </Card>
-
-          {/* ติดต่อเรา */}
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">ติดต่อเรา</h3>
-                <p className="text-gray-600 mb-4">หากมีข้อสงสัยเกี่ยวกับข้อกำหนดการใช้งาน กรุณาติดต่อเรา</p>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <p>อีเมล: ckteepuk@gmail.com</p>
-                  <p>โทรศัพท์:  02-123-4567</p>
-                  <p>ที่อยู่: กรุงเทพมหานคร ประเทศไทย</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-8 pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-500">© 2025  เช็คที่พัก (Check Teepak) สงวนลิขสิทธิ์</p>
         </div>
       </div>
     </div>
