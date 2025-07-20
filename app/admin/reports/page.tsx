@@ -177,12 +177,11 @@ const AdminReportsPage = () => {
 
   const getTypeText = (type: ReportType) => {
     const typeMap = {
-      "booking-fraud": "หลอกลวงการจองที่พัก",
-      "fake-agent": "นายหน้าปลอม",
-      "fake-website": "เว็บไซต์หลอกลวง",
-      "money-transfer-fraud": "การโอนเงินหลอกลวง",
-      "fake-payment": "การชำระเงินปลอม",
-      "poor-service": "บริการไม่ดี",
+     "fraud":"หลอกลวง/โกงเงิน",
+      "fake":"ที่พักปลอม/ไม่มีจริง",
+      "misleading":"ข้อมูลเท็จ/ทำให้เข้าใจผิด",
+      "unsafe":"ไม่ปลอดภัย",
+      "poor-service":"บริการไม่ดี",
       other: "อื่นๆ",
     }
     return typeMap[type]
@@ -284,11 +283,11 @@ const AdminReportsPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">ประเภททั้งหมด</SelectItem>
-                <SelectItem value="booking-fraud">หลอกลวงการจองที่พัก</SelectItem>
-                <SelectItem value="fake-agent">นายหน้าปลอม</SelectItem>
-                <SelectItem value="fake-website">เว็บไซต์หลอกลวง</SelectItem>
-                <SelectItem value="money-transfer-fraud">การโอนเงินหลอกลวง</SelectItem>
-                <SelectItem value="fake-payment">การชำระเงินปลอม</SelectItem>
+                <SelectItem value="fraud">หลอกลวง/โกงเงิน</SelectItem>
+                <SelectItem value="fake">ที่พักปลอม/ไม่มีจริง</SelectItem>
+                <SelectItem value="misleading">ข้อมูลเท็จ/ทำให้เข้าใจผิด</SelectItem>
+                <SelectItem value="unsafe">ไม่ปลอดภัย</SelectItem>
+                <SelectItem value="poor-service">บริการแย่</SelectItem>
                 <SelectItem value="other">อื่นๆ</SelectItem>
               </SelectContent>
             </Select>
@@ -323,7 +322,7 @@ const AdminReportsPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ข้อมูลผู้ต้องสงสัย</TableHead>
+                <TableHead>ชื่อผู้ต้องสงสัย</TableHead>
                 <TableHead>สถานที่เกิดเหตุ</TableHead>
                 <TableHead>ช่องทางติดต่อ</TableHead>
                 <TableHead>ประเภท</TableHead>
@@ -335,7 +334,7 @@ const AdminReportsPage = () => {
             <TableBody>
               {currentReports.map((report) => (
                 <TableRow key={report.id}>
-                  <TableCell className="font-medium">{report.description}</TableCell>
+                  <TableCell className="font-medium">{report.cheater_name}</TableCell>
                   <TableCell>{report.accommodation_name}</TableCell>
                   <TableCell>{report.phone}</TableCell>
                   <TableCell>{getTypeText(report.report_type)}</TableCell>
