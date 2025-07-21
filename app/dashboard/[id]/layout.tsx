@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
-import { LayoutDashboard, User, Settings, CheckCircle, Bell, Crown } from "lucide-react";
+import { LayoutDashboard,  User, Settings, CheckCircle, Bell, Crown, FileCheck } from "lucide-react";
 import SidebarNav from "@/components/sidebarnav";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -52,36 +52,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // เมนู Sidebar
   const memberItems = [
-    {
-      href: `/dashboard/${user.id}`,
-      title: "ภาพรวม",
-      icon: <LayoutDashboard className="h-5 w-5" />,
-    },
+
     {
       href: `/dashboard/${user.id}/profile`,
       title: "จัดการโปรไฟล์",
       icon: <User className="h-5 w-5" />,
     },
-    {
-      href: `/dashboard/${user.id}/verification`,
-      title: "สถานะการยืนยัน",
-      icon: <CheckCircle className="h-5 w-5" />,
-    },
+  
     {
       href: `/dashboard/${user.id}/settings`,
       title: "ตั้งค่าบัญชี",
       icon: <Settings className="h-5 w-5" />,
     },
     {
-      href: `/dashboard/${user.id}/notifications`,
-      title: "การแจ้งเตือน",
-      icon: <Bell className="h-5 w-5" />,
+      href: `/dashboard/${user.id}/confirm`,
+      title: "ยืนยันเอกสาร",
+      icon: <FileCheck className="h-5 w-5" />,
     },
-    {
-      href: `/dashboard/${user.id}/reports/subscription`,
-      title: "การสมัครสมาชิก",
-      icon: <Crown className="h-5 w-5" />,
-    },
+
+
+  
   ];
 
   return (
