@@ -80,6 +80,7 @@ export async function POST(request: Request) {
       website_url: data.websiteUrl,
       other_social_media: data.otherSocialMedia,
       evidence_urls: evidenceUrls,
+      cheater_name: data.cheaterName,
       status: "pending",
     });
 
