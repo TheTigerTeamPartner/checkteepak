@@ -63,7 +63,7 @@ export default function LoginPage() {
         if (profile?.role === "admin") {
           router.push("/admin");
         } else {
-          router.push(`/dashboard/${data.user.id}`);
+          router.push(`/dashboard/${data.user.id}/profile`);
         }
       } else {
         // Fallback redirection if user data is not available
