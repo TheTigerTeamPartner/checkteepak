@@ -1,7 +1,7 @@
 import { supabase } from "./supabase"
 import type { User } from "@/types"
 
-export async function signUp(email: string, password: string, fullName: string) {
+export async function signUp(email: string, password: string, fullName: string, phone: string) {
   try {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -9,6 +9,7 @@ export async function signUp(email: string, password: string, fullName: string) 
       options: {
         data: {
           full_name: fullName,
+          phone: phone,
         },
       },
     })
@@ -21,9 +22,9 @@ export async function signUp(email: string, password: string, fullName: string) 
         {
           id: data.user.id,
           email: data.user.email,
-          full_name: fullName,
-          user_type: "user",
-          is_verified: false,
+          name: fullName,
+          phone: phone,
+          role: "user",
         },
       ])
 

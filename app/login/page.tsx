@@ -1,46 +1,82 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, Mail, Lock } from "lucide-react"
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [formData, setFormData] = useState({ email: "", password: "" })
-  const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const supabase = createClientComponentClient()
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createClientComponentClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
-    })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
 
-    if (error) {
-      alert("อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง")
-      console.error("Login error:", error.message)
-      setLoading(false)
-      return
+      if (error) {
+        console.error("Login error:", error.message);
+        setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        console.log("Login successful, user:", data.user);
+
+        // ดึงข้อมูล role จากตาราง users
+        const { data: profile, error: profileError } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", data.user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Profile fetch error:", profileError.message);
+          setError("ไม่สามารถดึงข้อมูลผู้ใช้ได้");
+          setLoading(false);
+          return;
+        }
+
+        // Set user type in local storage
+        localStorage.setItem("userType", profile?.role || "member");
+
+        // Redirect ตาม role
+        if (profile?.role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push(`/dashboard/${data.user.id}/profile`);
+        }
+      } else {
+        // Fallback redirection if user data is not available
+        const redirectToParam = searchParams.get("redirectTo");
+        const destination = redirectToParam && !redirectToParam.startsWith("/dashboard") ? redirectToParam : "/";
+        router.push(destination);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setError("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+      setLoading(false);
     }
-
-    alert("เข้าสู่ระบบสำเร็จ")
-    const redirectTo = searchParams.get("redirectTo") || "/dashboard"
-    router.push(redirectTo)
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-md">
@@ -50,6 +86,7 @@ export default function LoginPage() {
           <p className="text-gray-600">เข้าสู่ระบบเพื่อใช้งานฟีเจอร์เพิ่มเติม</p>
         </CardHeader>
         <CardContent className="space-y-4">
+          {error && <p className="text-red-500 text-sm">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email">อีเมล</Label>
@@ -119,17 +156,8 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
-
-          <div className="space-y-2">
-            <Button variant="outline" className="w-full">
-              เข้าสู่ระบบด้วย Google
-            </Button>
-            <Button variant="outline" className="w-full">
-              เข้าสู่ระบบด้วย Facebook
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

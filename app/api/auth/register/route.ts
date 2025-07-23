@@ -1,80 +1,64 @@
-import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
-import { supabaseServer } from "@/lib/server" // ใช้ Service Role Key
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || '' // ต้องใช้ service role สำหรับฝั่ง backend
+);
 
 export async function POST(request: Request) {
-    try {
-        const body = await request.json()
-        const {
-            firstName, lastName, email, phone,
-            password, confirmPassword,
-            agreeTerms, agreeNewsletter
-        } = body
+  try {
+    const { email, password, firstName, lastName, phone } = await request.json();
+    const fullName = `${firstName} ${lastName}`.trim();
 
-        // 1. ตรวจสอบความถูกต้องของข้อมูล
-        if (!firstName || !lastName || !email || !phone || !password || !confirmPassword) {
-            return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" }, { status: 400 })
-        }
+    // สร้าง user ใน Supabase Auth
+    const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      user_metadata: { fullName, phone_number: phone }, // ✅ เก็บลง metadata ด้วยชื่อ phone_number
+      email_confirm: false,
+    });
 
-        if (password !== confirmPassword) {
-            return NextResponse.json({ error: "รหัสผ่านไม่ตรงกัน" }, { status: 400 })
-        }
-
-        if (!agreeTerms) {
-            return NextResponse.json({ error: "กรุณายอมรับข้อกำหนดและเงื่อนไข" }, { status: 400 })
-        }
-
-        // 2. สมัครสมาชิกผ่าน Supabase Auth
-        const { data: { user, session }, error: signUpError } = await supabaseServer.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    firstName,
-                    lastName,
-                    phone,
-                    agreeNewsletter: agreeNewsletter ?? false
-                }
-            }
-        })
-
-        if (signUpError) {
-            return NextResponse.json({ error: signUpError.message }, { status: 400 })
-        }
-
-        if (!user || !session) {
-            return NextResponse.json({ error: "ไม่สามารถสร้างผู้ใช้ได้" }, { status: 500 })
-        }
-
-        // 3. บันทึกข้อมูลลง Table users
-        const { error: insertError } = await supabaseServer.from("users").insert({
-            id: user.id,
-            email,
-            name: `${firstName} ${lastName}`,  // รวมชื่อและนามสกุลเป็นช่องเดียว
-            phone,
-            //   subscribed_newsletter: agreeNewsletter ?? false,
-            created_at: new Date().toISOString()
-        })
-
-
-        if (insertError) {
-            console.error("❌ INSERT ERROR:", insertError)
-            return NextResponse.json({ error: "สมัครสำเร็จแต่บันทึกข้อมูลไม่สำเร็จ" }, { status: 500 })
-        }
-
-        // 4. ตั้งค่า cookie สำหรับ session
-        const cookieStore = cookies()
-        cookieStore.set("sb-access-token", session.access_token, { path: "/" })
-        cookieStore.set("sb-refresh-token", session.refresh_token, { path: "/" })
-
-        // 5. Redirect ไปหน้าเลือกแพ็กเกจ
-        return NextResponse.redirect(new URL("/select-package", request.url))
-
-    } catch (error: any) {
-        console.error("❌ REGISTER ERROR:", error)
-        return NextResponse.json(
-            { error: error.message || "เกิดข้อผิดพลาดในการสมัครสมาชิก" },
-            { status: 500 }
-        )
+    if (signUpError) {
+      console.error('Sign up error:', signUpError.message);
+      return NextResponse.json({ error: signUpError.message }, { status: 400 });
     }
+
+    const user = signUpData?.user;
+    if (!user) {
+      return NextResponse.json({ error: 'สมัครสมาชิกไม่สำเร็จ' }, { status: 500 });
+    }
+
+    // วันที่สมัครและหมดอายุ
+    const subscriptionStartDate = new Date();
+    const subscriptionExpiryDate = new Date(
+      subscriptionStartDate.getFullYear(),
+      subscriptionStartDate.getMonth() + 1,
+      1
+    );
+
+    // บันทึกลงตาราง agents
+    const { error: insertError } = await supabase.from('agents').insert([
+      {
+        id: user.id,
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone_number: phone, // ✅ ใช้ phone_number ให้ตรงกับชื่อคอลัมน์ใน DB
+        subscription_start_date: subscriptionStartDate.toISOString(),
+        subscription_expiry_date: subscriptionExpiryDate.toISOString(),
+      },
+    ]);
+
+    if (insertError) {
+      console.error('Insert agent error:', insertError.message);
+      return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการบันทึกข้อมูลเพิ่มเติม' }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: 'สมัครสมาชิกสำเร็จ' }, { status: 201 });
+
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'เกิดข้อผิดพลาด';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

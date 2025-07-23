@@ -76,8 +76,7 @@ const [loading, setLoading] = useState(true)
   const agentId = params.id
 
   useEffect(() => {
-    console.log('Fetching agent with id:', agentId)
-    
+
     if (!agentId) {
       setError('No agent ID provided')
       return
@@ -86,7 +85,7 @@ const [loading, setLoading] = useState(true)
     const fetchAgentData = async () => {
       try {
         setLoading(true)
-        console.log('Fetching from Supabase...')
+      
         
         const { data, error } = await supabase
           .from('agents')
@@ -109,11 +108,7 @@ const [loading, setLoading] = useState(true)
           setError(`No agent found with ID: ${agentId}`)
           return
         }
-
-        console.log('Successfully fetched agent:', {
-          id: data.id,
-          name: data.name
-        })
+      
         setAgentData(data)
       } catch (err) {
         console.error('Unexpected error:', err)
@@ -133,6 +128,7 @@ const [loading, setLoading] = useState(true)
   const copyContact = (type: string, value: string) => {
     navigator.clipboard.writeText(value)
   }
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Cover Image */}
@@ -470,40 +466,45 @@ const [loading, setLoading] = useState(true)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {agentData?.banking?.map((account) => (
-                <div
-                  key={account.id}
-                  className="flex flex-col md:flex-row md:items-center md:justify-between p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-white rounded-lg shadow-sm">
-                      <CreditCard className="h-5 w-5 text-gray-600" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-800">{account.bankName}</div>
-                      <div className="text-sm md:text-base text-gray-600">
-                        {account.accountNumber} - {account.accountName}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 mt-3 md:mt-0">
-                    {account.isPrimary && (
-                      <Badge variant="default" className="bg-teal-600 hover:bg-teal-700 text-white">
-                        บัญชีหลัก
-                      </Badge>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyContact("account", account.accountNumber)}
-                      className="hover:bg-green-100"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
+  {Array.isArray(agentData?.banking) && agentData.banking.length > 0 ? (
+    agentData.banking.map((account) => (
+      <div
+        key={account.id}
+        className="flex flex-col md:flex-row md:items-center md:justify-between p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200"
+      >
+        <div className="flex items-center gap-4">
+          <div className="p-2 bg-white rounded-lg shadow-sm">
+            <CreditCard className="h-5 w-5 text-gray-600" />
+          </div>
+          <div>
+            <div className="font-semibold text-gray-800">{account.bank_name}</div>
+            <div className="text-sm md:text-base text-gray-600">
+              {account.account_number} - {account.account_name}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 mt-3 md:mt-0">
+          {account.is_primary && (
+            <Badge variant="default" className="bg-teal-600 hover:bg-teal-700 text-white">
+              บัญชีหลัก
+            </Badge>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => copyContact("account", account.account_number)}
+            className="hover:bg-green-100"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    ))
+  ) : (
+    <p className="text-gray-600">ไม่มีข้อมูลบัญชีธนาคาร</p>
+  )}
+</CardContent>
+
           </Card>
 
           {/* Warning Section */}

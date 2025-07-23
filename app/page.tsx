@@ -8,10 +8,10 @@ export default function Home() {
     <div className="container mx-auto px-4 py-8">
       <HeroSection />
 
-      <QuickActions />
+
 
       <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">โปรไฟล์ล่าสุดที่ตรวจสอบ</h2>
+        <h2 className="text-2xl font-bold mb-6 text-gray-800">โปรไฟล์ล่าสุดที่สร้าง</h2>
         <RecentAccommodations />
       </div>
 

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { CheckCircle, MapPin } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
-type AgentStatus = "verified" | "new" | "experienced"
+type AgentStatus = "verified" | "new" | "experienced" | "pending" | "scammer"
 
 interface Agent {
   id: string
@@ -59,6 +59,18 @@ export function RecentAccommodations() {
             สมาชิกใหม่
           </Badge>
         )
+      case "pending":
+        return (
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+            รอการยืนยัน
+          </Badge>
+        )
+      case "scammer":
+        return (
+          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+            สมาชิกโกง
+          </Badge>
+        )
       default:
         return null
     }
@@ -68,12 +80,12 @@ export function RecentAccommodations() {
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: agentsData, error: agentsError } = await supabase
         .from('agents')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(12)
+        .limit(4)
 
       if (agentsError) {
         console.error('Error fetching agents:', agentsError)
@@ -97,10 +109,9 @@ export function RecentAccommodations() {
           user: usersData?.find(user => user.id === agent.user_id)
         }))
 
-        console.log('Combined data:', combinedData)
+
         setAgents(combinedData)
       } else {
-        console.log('Agents:', agentsData)
         setAgents(agentsData || [])
       }
     } catch (err) {
@@ -127,6 +138,7 @@ export function RecentAccommodations() {
           </Card>
         ))}
       </div>
+
     )
   }
 

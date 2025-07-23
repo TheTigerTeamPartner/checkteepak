@@ -135,12 +135,6 @@ export function FraudAwareness() {
                   แจ้งเหตุโกง
                 </Link>
               </Button>
-              <Button size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-50" asChild>
-                <Link href="/fraud-statistics">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  ดูสถิติการโกง
-                </Link>
-              </Button>
             </div>
           </div>
         </div>
@@ -206,19 +200,7 @@ export function FraudAwareness() {
         ))}
       </div>
 
-      {/* Bottom CTA */}
-      <div className="bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl p-6 text-white text-center">
-        <h3 className="text-xl font-bold mb-2">พบเจอการโกงหรือต้องสงสัย?</h3>
-        <p className="mb-4 opacity-90">แจ้งให้เราทราบเพื่อช่วยเหลือคนอื่นๆ และสร้างชุมชนที่ปลอดภัย</p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button className="bg-white text-blue-600 hover:bg-white/90" asChild>
-            <Link href="/report">แจ้งที่พักโกง</Link>
-          </Button>
-          <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white/10" asChild>
-            <Link href="/about">เกี่ยวกับเรา</Link>
-          </Button>
-        </div>
-      </div>
+      
     </div>
   )
 }

@@ -86,8 +86,9 @@ export default function AboutPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl overflow-hidden mb-16">
-        <div className="absolute inset-0 bg-[url('/placeholder.svg?height=600&width=1200')] opacity-10 bg-cover bg-center" />
+      <section className="relative bg-gradient-to-r rounded-xl overflow-hidden mb-16">
+        <div className="absolute inset-0 bg-[url('/about.PNG')] opacity-10 bg-cover bg-center opacity-100" />
+        <div className="absolute inset-0 bg-black/50" />
         <div className="relative px-6 py-16 md:py-24 md:px-12 text-center">
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">เกี่ยวกับเช็คที่พัก</h1>
           <p className="text-lg md:text-xl text-white/90 mb-8 max-w-3xl mx-auto">
@@ -95,10 +96,7 @@ export default function AboutPage() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Button size="lg" className="bg-white text-teal-600 hover:bg-white/90">
-              ร่วมงานกับเรา
-            </Button>
-            <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
-              ติดต่อทีมงาน
+              ติดต่อเรา
             </Button>
           </div>
         </div>
@@ -150,7 +148,7 @@ export default function AboutPage() {
           <div className="relative">
             <div className="aspect-video rounded-lg overflow-hidden shadow-xl">
               <Image
-                src="/placeholder.svg?height=400&width=600"
+                src="/misson.jpg"
                 alt="พันธกิจของเช็คที่พัก"
                 width={600}
                 height={400}
@@ -284,49 +282,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Our Journey */}
-      <section className="mb-16">
-        <div className="text-center mb-12">
-          <Badge className="mb-4 bg-teal-100 text-teal-800 hover:bg-teal-200 border-none">เส้นทางของเรา</Badge>
-          <h2 className="text-3xl font-bold mb-4">ประวัติความเป็นมา</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            เช็คที่พักเริ่มต้นจากความตั้งใจที่จะแก้ปัญหาการหลอกลวงในธุรกิจที่พัก และเติบโตขึ้นเป็นแพลตฟอร์มที่ได้รับความไว้วางใจ
-          </p>
-        </div>
-
-        <div className="relative">
-          {/* Timeline line */}
-          <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-teal-200 transform md:-translate-x-1/2"></div>
-
-          <div className="space-y-12">
-            {milestones.map((milestone, index) => (
-              <div
-                key={index}
-                className={`relative flex flex-col md:flex-row ${index % 2 === 0 ? "" : "md:flex-row-reverse"}`}
-              >
-                <div className="md:w-1/2 mb-8 md:mb-0">
-                  <div
-                    className={`bg-white p-6 rounded-lg shadow-sm ${index % 2 === 0 ? "md:mr-8" : "md:ml-8"} relative`}
-                  >
-                    <div className="absolute top-6 bg-teal-500 text-white text-sm font-bold py-1 px-3 rounded">
-                      {milestone.year}
-                    </div>
-                    <h3 className="text-xl font-bold mb-2 mt-8">{milestone.title}</h3>
-                    <p className="text-gray-600">{milestone.description}</p>
-                  </div>
-                </div>
-
-                <div className="absolute left-4 md:left-1/2 w-8 h-8 bg-teal-500 rounded-full border-4 border-white transform -translate-x-1/2 flex items-center justify-center">
-                  <Clock className="h-4 w-4 text-white" />
-                </div>
-
-                <div className="md:w-1/2"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Partners */}
       <section className="mb-16">
         <div className="text-center mb-12">
@@ -352,24 +307,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl overflow-hidden">
-        <div className="px-6 py-16 md:py-20 md:px-12 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">ร่วมเป็นส่วนหนึ่งในการสร้างการท่องเที่ยวที่ปลอดภัย</h2>
-          <p className="text-lg text-white/90 mb-8 max-w-3xl mx-auto">
-            ไม่ว่าคุณจะเป็นนักท่องเที่ยว เจ้าของที่พัก หรือผู้ประกอบการในอุตสาหกรรมท่องเที่ยว
-            คุณสามารถมีส่วนร่วมในการสร้างสังคมการท่องเที่ยวที่ปลอดภัยไปด้วยกัน
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button size="lg" className="bg-white text-teal-600 hover:bg-white/90">
-              สมัครสมาชิก
-            </Button>
-            <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
-              ติดต่อเรา
-            </Button>
-          </div>
-        </div>
-      </section>
     </div>
   )
 }

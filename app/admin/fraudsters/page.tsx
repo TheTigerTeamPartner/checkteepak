@@ -65,7 +65,6 @@ interface Fraudster {
   riskLevel: "low" | "medium" | "high"
   status: "pending" | "verified" | "rejected"
   dateAdded: string
-  totalAmount: number
   reportedBy: string
 }
 
@@ -80,25 +79,11 @@ interface BankAccount {
 interface Case {
   id: string
   description: string
-  amount: number
   date: string
   status: "open" | "closed" | "investigating"
   victimName: string
   fraudType: string
   evidence: string[]
-}
-
-const calculateRiskLevel = (fraudster: Fraudster): "low" | "medium" | "high" => {
-  const totalAmount = fraudster.cases.reduce((acc, c) => acc + c.amount, 0)
-  const numberOfCases = fraudster.cases.length
-
-  if (numberOfCases >= 3 && totalAmount >= 100000) {
-    return "high"
-  } else if (numberOfCases >= 2 && totalAmount >= 50000) {
-    return "medium"
-  } else {
-    return "low"
-  }
 }
 
 const mockFraudsters: Fraudster[] = [
@@ -132,7 +117,6 @@ const mockFraudsters: Fraudster[] = [
       {
         id: "1",
         description: "หลอกขายคอนโดปลอม โครงการ The Luxury Condo",
-        amount: 50000,
         date: "2024-01-15",
         status: "investigating",
         victimName: "นางสาวมาลี สวยงาม",
@@ -142,7 +126,6 @@ const mockFraudsters: Fraudster[] = [
       {
         id: "2",
         description: "หลอกให้จ่ายค่ามัดจำห้องเช่าปลอม",
-        amount: 25000,
         date: "2024-02-10",
         status: "open",
         victimName: "นายจิรายุ มั่งมี",
@@ -154,7 +137,6 @@ const mockFraudsters: Fraudster[] = [
     riskLevel: "high",
     status: "pending",
     dateAdded: "2024-03-01",
-    totalAmount: 75000,
     reportedBy: "ระบบรับเรื่องร้องเรียน",
   },
   {
@@ -180,7 +162,7 @@ const mockFraudsters: Fraudster[] = [
       {
         id: "3",
         description: "แอบอ้างเป็นนายหน้าอสังหาริมทรัพย์ หลอกเก็บค่าคอมมิชชั่น",
-        amount: 80000,
+
         date: "2024-01-20",
         status: "closed",
         victimName: "นายประยุทธ์ ซื่อสัตย์",
@@ -190,7 +172,6 @@ const mockFraudsters: Fraudster[] = [
       {
         id: "4",
         description: "หลอกขายบ้านที่ไม่มีอยู่จริง",
-        amount: 120000,
         date: "2024-02-05",
         status: "investigating",
         victimName: "นางสุดา ดีใจ",
@@ -202,7 +183,6 @@ const mockFraudsters: Fraudster[] = [
     riskLevel: "high",
     status: "verified",
     dateAdded: "2024-02-15",
-    totalAmount: 200000,
     reportedBy: "เจ้าหน้าที่ตรวจสอบ",
   },
   {
@@ -235,7 +215,6 @@ const mockFraudsters: Fraudster[] = [
       {
         id: "5",
         description: "หลอกลงทุนโครงการคอนโดปลอม",
-        amount: 300000,
         date: "2024-01-10",
         status: "open",
         victimName: "นายสมศักดิ์ รวยเร็ว",
@@ -247,7 +226,6 @@ const mockFraudsters: Fraudster[] = [
     riskLevel: "high",
     status: "rejected",
     dateAdded: "2024-01-25",
-    totalAmount: 300000,
     reportedBy: "ระบบรับเรื่องร้องเรียน",
   },
 ]
@@ -305,17 +283,11 @@ const FraudstersPage = () => {
           </Button>
         )
       },
+      cell: ({ row }) => row.original.name,
     },
     {
       accessorKey: "phone",
       header: "เบอร์โทรศัพท์",
-    },
-    {
-      accessorKey: "totalAmount",
-      header: "จำนวนเงินรวม",
-      cell: ({ row }) => {
-        return <span className="font-medium">{row.original.totalAmount.toLocaleString()} บาท</span>
-      },
     },
     {
       accessorKey: "riskLevel",
@@ -334,10 +306,10 @@ const FraudstersPage = () => {
         const statusText = status === "verified" ? "ยืนยันแล้ว" : status === "pending" ? "รอตรวจสอบ" : "ไม่อนุมัติ"
         const StatusIcon = status === "verified" ? CheckCircle : status === "pending" ? Clock : X
         return (
-          <Badge className={getStatusBadgeColor(status)}>
-            <StatusIcon className="mr-1 h-3 w-3" />
-            {statusText}
-          </Badge>
+            <Badge className={getStatusBadgeColor(status)}>
+              <StatusIcon className="mr-1 h-3 w-3" />
+              {statusText}
+            </Badge>
         )
       },
     },
@@ -356,16 +328,6 @@ const FraudstersPage = () => {
           >
             <Edit className="mr-2 h-4 w-4" />
             ดูรายละเอียด
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              // Handle edit
-              console.log("Edit fraudster:", row.original.id)
-            }}
-          >
-            <Edit className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
@@ -696,12 +658,6 @@ const FraudstersPage = () => {
                         />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="fraud-amount" className="text-right">
-                          จำนวนเงิน (บาท)
-                        </Label>
-                        <Input id="fraud-amount" type="number" placeholder="0" className="col-span-3" />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="incident-date" className="text-right">
                           วันที่เกิดเหตุ
                         </Label>
@@ -962,9 +918,6 @@ const FraudstersPage = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium">เคสการหลอกลวง ({selectedFraudster.cases.length} เคส)</h3>
-                    <div className="text-sm text-muted-foreground">
-                      ยอดรวม: {selectedFraudster.totalAmount.toLocaleString()} บาท
-                    </div>
                   </div>
                   <div className="space-y-4">
                     {selectedFraudster.cases.map((caseItem) => (
@@ -993,9 +946,6 @@ const FraudstersPage = () => {
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
                               <span className="font-medium">ผู้ถูกหลอก:</span> {caseItem.victimName}
-                            </div>
-                            <div>
-                              <span className="font-medium">จำนวนเงิน:</span> {caseItem.amount.toLocaleString()} บาท
                             </div>
                             <div>
                               <span className="font-medium">วันที่เกิดเหตุ:</span>{" "}

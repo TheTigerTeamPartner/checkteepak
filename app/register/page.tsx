@@ -1,20 +1,21 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
 
 export default function RegisterPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -24,44 +25,55 @@ export default function RegisterPage() {
     confirmPassword: "",
     agreeTerms: false,
     agreeNewsletter: false,
-  })
+  });
+
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
+    setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      alert("รหัสผ่านไม่ตรงกัน")
-      return
+      setError("รหัสผ่านไม่ตรงกัน");
+      return;
     }
 
     if (!formData.agreeTerms) {
-      alert("กรุณายอมรับข้อกำหนดและเงื่อนไข")
-      return
+      setError("กรุณายอมรับข้อกำหนดและเงื่อนไข");
+      return;
     }
 
     try {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+      );
+      console.log("Supabase client in RegisterPage:", supabase);
+
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
-      })
+      });
 
       if (!res.ok) {
-        const { error } = await res.json()
-        alert(error || "เกิดข้อผิดพลาด")
-        return
+        const { error } = await res.json();
+        setError(error || "เกิดข้อผิดพลาด");
+        return;
       }
 
-      alert("สมัครสมาชิกสำเร็จ! กำลังเปลี่ยนเส้นทาง...")
-      setTimeout(() => {
-        window.location.href = "/select-package"
-      }, 2000)
+      console.log("Registration success");
+      if (typeof window !== "undefined") {
+        localStorage.setItem("userType", "member");
+      }
+      router.push("/select-package");
     } catch (err) {
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์")
+      console.error("Registration error:", err);
+      setError("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     }
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-md">
@@ -71,6 +83,7 @@ export default function RegisterPage() {
           <p className="text-gray-600">สร้างบัญชีใหม่เพื่อเริ่มใช้งาน</p>
         </CardHeader>
         <CardContent className="space-y-4">
+          {error && <p className="text-red-500 text-sm">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -235,17 +248,8 @@ export default function RegisterPage() {
               </Link>
             </p>
           </div>
-
-          <div className="space-y-2">
-            <Button variant="outline" className="w-full">
-              สมัครด้วย Google
-            </Button>
-            <Button variant="outline" className="w-full">
-              สมัครด้วย Facebook
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

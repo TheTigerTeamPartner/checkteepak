@@ -1,5 +1,6 @@
 "use client"
 
+import { supabase } from "@/lib/supabase"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -31,36 +32,40 @@ import {
   CheckCircle,
 } from "lucide-react"
 
+
 // Define types for Report and ReportStatus
 type ReportType = "booking-fraud" | "fake-agent" | "fake-website" | "money-transfer-fraud" | "fake-payment" | "other"
 
-type ReportStatus = "received" | "investigating" | "recorded" | "forwarded" | "closed"
-
+type ReportStatus = "pending" | "investigating" | "recorded" | "forwarded" | "closed"
 interface Report {
-  id: number
+  id: number ////
+  title: string ////
+  phone: string ////
   suspectInfo: string
   incidentLocation: string
   suspectContact: string
-  reportType: ReportType
-  description: string
-  status: ReportStatus
-  createdAt: string
-  // เพิ่มฟิลด์ใหม่จากฟอร์ม /report
-  accommodationName?: string
-  incidentDate?: string
-  bankAccount?: string
-  bankName?: string
-  accountHolder?: string
-  reporterName?: string
-  reporterPhone?: string
-  reporterEmail?: string
-  facebookProfile?: string
-  instagramProfile?: string
-  lineId?: string
-  tiktokProfile?: string
-  websiteUrl?: string
-  otherSocialMedia?: string
+  report_type: ReportType ////
+  description: string ////
+  status: ReportStatus ////
+  created_at: string ////
+  updated_at: string ////
+  accommodation_name: string ////
+  incident_date: string ////
+  bank_account: string ////
+  bank_name: string ////
+  account_holder: string ////
+  reporter_name: string ////
+  reporter_phone: string ////
+  reporter_email: string ////
+  facebook_profile: string ////
+  instagram_profile: string ////
+  line_id: string ////
+  tiktok_profile: string ////
+  website_url: string ////
+  other_social_media: string ////
+  evidence_urls?: string[] ////
 }
+
 
 const AdminReportsPage = () => {
   const [reports, setReports] = useState<Report[]>([])
@@ -72,115 +77,41 @@ const AdminReportsPage = () => {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const { toast } = useToast()
 
-  // Mock data for reports
   useEffect(() => {
-    const mockReports: Report[] = [
-      {
-        id: 1,
-        suspectInfo: "นายสมชาย ใจดี",
-        incidentLocation: "กรุงเทพมหานคร",
-        suspectContact: "0812345678",
-        reportType: "booking-fraud",
-        description: "ถูกหลอกให้โอนเงินค่าจองที่พัก แต่ไม่ได้รับที่พักจริง มีการส่งหลักฐานการโอนเงินจำนวน 5,000 บาท และสกรีนช็อตการสนทนา",
-        status: "received",
-        createdAt: "2024-01-01",
-        accommodationName: "รีสอร์ทสวยงาม",
-        incidentDate: "2024-01-01",
-        bankAccount: "1234567890",
-        bankName: "ธนาคารกรุงเทพ",
-        accountHolder: "นายสมชาย ใจดี",
-        reporterName: "นางสาวสมใจ ดีใจ",
-        reporterPhone: "0898765432",
-        reporterEmail: "somjai@email.com",
-        facebookProfile: "facebook.com/fake-resort",
-        lineId: "@fake-resort",
-      },
-      {
-        id: 2,
-        suspectInfo: "นางสาวสมหญิง จริงใจ",
-        incidentLocation: "เชียงใหม่",
-        suspectContact: "0823456789",
-        reportType: "fake-agent",
-        description: "ถูกหลอกโดยอ้างว่าเป็นนายหน้าอสังหาริมทรัพย์ที่มีใบอนุญาต แต่เมื่อตรวจสอบแล้วไม่มีตัวตนจริง",
-        status: "investigating",
-        createdAt: "2024-01-05",
-      },
-      {
-        id: 3,
-        suspectInfo: "บริษัท มิจฉาชีพ จำกัด",
-        incidentLocation: "ภูเก็ต",
-        suspectContact: "0834567890",
-        reportType: "fake-website",
-        description: "เว็บไซต์ปลอมที่เลียนแบบเว็บไซต์จองที่พักชื่อดัง หลอกให้กรอกข้อมูลบัตรเครดิตและข้อมูลส่วนตัว",
-        status: "recorded",
-        createdAt: "2024-01-10",
-      },
-      {
-        id: 4,
-        suspectInfo: "นายมีชัย ให้โชค",
-        incidentLocation: "ชลบุรี",
-        suspectContact: "0845678901",
-        reportType: "money-transfer-fraud",
-        description: "ถูกหลอกให้โอนเงินโดยอ้างว่าจะให้ผลตอบแทนสูงจากการลงทุนที่พัก แต่หลังโอนเงินแล้วติดต่อไม่ได้",
-        status: "forwarded",
-        createdAt: "2024-01-15",
-      },
-      {
-        id: 5,
-        suspectInfo: "นางสาวใจดี มีสุข",
-        incidentLocation: "ขอนแก่น",
-        suspectContact: "0856789012",
-        reportType: "fake-payment",
-        description: "ถูกหลอกให้ชำระเงินผ่านช่องทางปลอม โดยส่งลิงก์ปลอมให้กรอกข้อมูลบัตรเครดิต",
-        status: "closed",
-        createdAt: "2024-01-20",
-      },
-      {
-        id: 6,
-        suspectInfo: "นายสมหวัง ตั้งใจ",
-        incidentLocation: "สงขลา",
-        suspectContact: "0867890123",
-        reportType: "other",
-        description: "การหลอกลวงรูปแบบอื่นๆ ที่เกี่ยวข้องกับการจองที่พักและอสังหาริมทรัพย์",
-        status: "received",
-        createdAt: "2024-01-25",
-      },
-      {
-        id: 7,
-        suspectInfo: "นางสาวสำเร็จ สมบูรณ์",
-        incidentLocation: "นครราชสีมา",
-        suspectContact: "0878901234",
-        reportType: "booking-fraud",
-        description: "ถูกหลอกให้โอนเงินค่าจองที่พักล่วงหน้า แต่เมื่อไปถึงไม่มีที่พักดังกล่าว",
-        status: "investigating",
-        createdAt: "2024-01-30",
-      },
-      {
-        id: 8,
-        suspectInfo: "บริษัท ซื่อสัตย์ จำกัด",
-        incidentLocation: "ระยอง",
-        suspectContact: "0889012345",
-        reportType: "fake-agent",
-        description: "ถูกหลอกโดยอ้างว่าเป็นนายหน้าที่มีประสบการณ์ แต่ไม่มีใบอนุญาตและไม่มีตัวตนจริง",
-        status: "recorded",
-        createdAt: "2024-02-01",
-      },
-    ]
-    setReports(mockReports)
+    const fetchReports = async () => {
+      const { data, error } = await supabase
+        .from<Report>("reports")  // ชื่อตารางจริงในฐานข้อมูล
+        .select("*")
+        .order("created_at", { ascending: false })
+  
+      if (error) {
+        console.error("Error fetching reports:", error)
+        // แสดง toast หรือแจ้งเตือน error
+        toast({
+          title: "เกิดข้อผิดพลาดในการดึงข้อมูล",
+          description: error.message,
+          variant: "destructive",
+        })
+      } else if (data) {
+        setReports(data)
+      }
+    }
+  
+    fetchReports()
   }, [])
 
   // Calculate total number of reports for statistics cards
   const totalReports = reports.length
-  const receivedReports = reports.filter((report) => report.status === "received").length
+  const pendingReports = reports.filter((report) => report.status === "pending").length
   const investigatingReports = reports.filter((report) => report.status === "investigating").length
   const recordedReports = reports.filter((report) => report.status === "recorded").length
   const forwardedReports = reports.filter((report) => report.status === "forwarded").length
 
   // Filter reports based on search term and status
   const filteredReports = reports.filter((report) => {
-    const searchTermLower = searchTerm.toLowerCase()
-    const suspectInfoLower = report.suspectInfo.toLowerCase()
-    const incidentLocationLower = report.incidentLocation.toLowerCase()
+    const searchTermLower = searchTerm.toLowerCase();
+    const suspectInfoLower = report.suspectInfo?.toLowerCase() ?? "";
+    const incidentLocationLower = report.incidentLocation?.toLowerCase() ?? "";
 
     const searchCondition =
       suspectInfoLower.includes(searchTermLower) ||
@@ -190,7 +121,7 @@ const AdminReportsPage = () => {
 
     const statusCondition = statusFilter === "all" || report.status === statusFilter
 
-    const typeCondition = typeFilter === "all" || report.reportType === typeFilter
+    const typeCondition = typeFilter === "all" || report.report_type === typeFilter
 
     return searchCondition && statusCondition && typeCondition
   })
@@ -215,7 +146,7 @@ const AdminReportsPage = () => {
 
   const getStatusText = (status: ReportStatus) => {
     const statusMap = {
-      received: "รับเรื่อง",
+      pending: "รับเรื่อง",
       investigating: "กำลังตรวจสอบ",
       recorded: "บันทึกข้อมูลแล้ว",
       forwarded: "ส่งต่อหน่วยงาน",
@@ -226,7 +157,7 @@ const AdminReportsPage = () => {
 
   const getStatusBadge = (status: ReportStatus) => {
     const statusConfig = {
-      received: { variant: "secondary" as const, icon: AlertTriangle },
+      pending: { variant: "secondary" as const, icon: AlertTriangle },
       investigating: { variant: "default" as const, icon: Clock },
       recorded: { variant: "outline" as const, icon: FileCheck },
       forwarded: { variant: "destructive" as const, icon: Send },
@@ -246,11 +177,11 @@ const AdminReportsPage = () => {
 
   const getTypeText = (type: ReportType) => {
     const typeMap = {
-      "booking-fraud": "หลอกลวงการจองที่พัก",
-      "fake-agent": "นายหน้าปลอม",
-      "fake-website": "เว็บไซต์หลอกลวง",
-      "money-transfer-fraud": "การโอนเงินหลอกลวง",
-      "fake-payment": "การชำระเงินปลอม",
+     "fraud":"หลอกลวง/โกงเงิน",
+      "fake":"ที่พักปลอม/ไม่มีจริง",
+      "misleading":"ข้อมูลเท็จ/ทำให้เข้าใจผิด",
+      "unsafe":"ไม่ปลอดภัย",
+      "poor-service":"บริการไม่ดี",
       other: "อื่นๆ",
     }
     return typeMap[type]
@@ -281,7 +212,7 @@ const AdminReportsPage = () => {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{receivedReports}</div>
+            <div className="text-2xl font-bold">{pendingReports}</div>
           </CardContent>
         </Card>
 
@@ -338,7 +269,7 @@ const AdminReportsPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">สถานะทั้งหมด</SelectItem>
-                <SelectItem value="received">รับเรื่อง</SelectItem>
+                <SelectItem value="pending">รับเรื่อง</SelectItem>
                 <SelectItem value="investigating">กำลังตรวจสอบ</SelectItem>
                 <SelectItem value="recorded">บันทึกข้อมูลแล้ว</SelectItem>
                 <SelectItem value="forwarded">ส่งต่อหน่วยงาน</SelectItem>
@@ -352,11 +283,11 @@ const AdminReportsPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">ประเภททั้งหมด</SelectItem>
-                <SelectItem value="booking-fraud">หลอกลวงการจองที่พัก</SelectItem>
-                <SelectItem value="fake-agent">นายหน้าปลอม</SelectItem>
-                <SelectItem value="fake-website">เว็บไซต์หลอกลวง</SelectItem>
-                <SelectItem value="money-transfer-fraud">การโอนเงินหลอกลวง</SelectItem>
-                <SelectItem value="fake-payment">การชำระเงินปลอม</SelectItem>
+                <SelectItem value="fraud">หลอกลวง/โกงเงิน</SelectItem>
+                <SelectItem value="fake">ที่พักปลอม/ไม่มีจริง</SelectItem>
+                <SelectItem value="misleading">ข้อมูลเท็จ/ทำให้เข้าใจผิด</SelectItem>
+                <SelectItem value="unsafe">ไม่ปลอดภัย</SelectItem>
+                <SelectItem value="poor-service">บริการแย่</SelectItem>
                 <SelectItem value="other">อื่นๆ</SelectItem>
               </SelectContent>
             </Select>
@@ -391,7 +322,7 @@ const AdminReportsPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ข้อมูลผู้ต้องสงสัย</TableHead>
+                <TableHead>ชื่อผู้ต้องสงสัย</TableHead>
                 <TableHead>สถานที่เกิดเหตุ</TableHead>
                 <TableHead>ช่องทางติดต่อ</TableHead>
                 <TableHead>ประเภท</TableHead>
@@ -403,12 +334,12 @@ const AdminReportsPage = () => {
             <TableBody>
               {currentReports.map((report) => (
                 <TableRow key={report.id}>
-                  <TableCell className="font-medium">{report.suspectInfo}</TableCell>
-                  <TableCell>{report.incidentLocation}</TableCell>
-                  <TableCell>{report.suspectContact}</TableCell>
-                  <TableCell>{getTypeText(report.reportType)}</TableCell>
+                  <TableCell className="font-medium">{report.cheater_name}</TableCell>
+                  <TableCell>{report.accommodation_name}</TableCell>
+                  <TableCell>{report.phone}</TableCell>
+                  <TableCell>{getTypeText(report.report_type)}</TableCell>
                   <TableCell>{getStatusBadge(report.status)}</TableCell>
-                  <TableCell>{report.createdAt}</TableCell>
+                  <TableCell>{report.created_at}</TableCell>
                   <TableCell>
                     <Dialog>
                       <DialogTrigger asChild>
@@ -430,20 +361,20 @@ const AdminReportsPage = () => {
                               <div>
                                 <Label>ชื่อที่พัก</Label>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                  {report.accommodationName || "ไม่ระบุ"}
+                                  {report.accommodation_name|| "ไม่ระบุ"}
                                 </p>
                               </div>
                               <div>
                                 <Label>เบอร์โทรศัพท์ที่พัก</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.suspectContact}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{report.phone}</p>
                               </div>
                               <div>
                                 <Label>ประเภทปัญหา</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{getTypeText(report.reportType)}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{getTypeText(report.report_type)}</p>
                               </div>
                               <div>
                                 <Label>วันที่เกิดเหตุ</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.incidentDate || "ไม่ระบุ"}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{report.incident_date || "ไม่ระบุ"}</p>
                               </div>
                             </div>
                           </div>
@@ -455,31 +386,31 @@ const AdminReportsPage = () => {
                               <div>
                                 <Label>Facebook Profile/Page</Label>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                  {report.facebookProfile || "ไม่ระบุ"}
+                                  {report.facebook_profile || "ไม่ระบุ"}
                                 </p>
                               </div>
                               <div>
-                                <Label>Instagram Profile</Label>
+                                <Label>Instagram Profile/Page</Label>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                  {report.instagramProfile || "ไม่ระบุ"}
+                                  {report.instagram_profile || "ไม่ระบุ"}
                                 </p>
                               </div>
                               <div>
                                 <Label>Line ID</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.lineId || "ไม่ระบุ"}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{report.line_id || "ไม่ระบุ"}</p>
                               </div>
                               <div>
                                 <Label>TikTok Profile</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.tiktokProfile || "ไม่ระบุ"}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{report.tiktok_profile || "ไม่ระบุ"}</p>
                               </div>
                               <div>
                                 <Label>เว็บไซต์</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.websiteUrl || "ไม่ระบุ"}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{report.website_url || "ไม่ระบุ"}</p>
                               </div>
                               <div>
                                 <Label>Social Media อื่นๆ</Label>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                  {report.otherSocialMedia || "ไม่ระบุ"}
+                                  {report.other_social_media || "ไม่ระบุ"}
                                 </p>
                               </div>
                             </div>
@@ -491,15 +422,15 @@ const AdminReportsPage = () => {
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <Label>ธนาคาร</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.bankName || "ไม่ระบุ"}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{report.bank_name || "ไม่ระบุ"}</p>
                               </div>
                               <div>
                                 <Label>เลขบัญชี</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.bankAccount || "ไม่ระบุ"}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{report.bank_account || "ไม่ระบุ"}</p>
                               </div>
                               <div className="col-span-2">
                                 <Label>ชื่อเจ้าของบัญชี</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.accountHolder || "ไม่ระบุ"}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{report.account_holder || "ไม่ระบุ"}</p>
                               </div>
                             </div>
                           </div>
@@ -518,19 +449,19 @@ const AdminReportsPage = () => {
                             <h3 className="font-semibold text-lg mb-3">ข้อมูลผู้แจ้ง</h3>
                             <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <Label>ชื่อ-นามสกุล</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.reporterName || "ไม่ระบุ"}</p>
-                              </div>
-                              <div>
-                                <Label>เบอร์โทรศัพท์</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.reporterPhone || "ไม่ระบุ"}</p>
-                              </div>
-                              <div className="col-span-2">
-                                <Label>อีเมล</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.reporterEmail || "ไม่ระบุ"}</p>
+                                  <Label>ชื่อ-นามสกุล</Label>
+                                  <p className="text-sm text-muted-foreground mt-1">{report.reporter_name || "ไม่ระบุ"}</p>
+                                </div>
+                                <div>
+                                  <Label>เบอร์โทรศัพท์</Label>
+                                  <p className="text-sm text-muted-foreground mt-1">{report.reporter_phone || "ไม่ระบุ"}</p>
+                                </div>
+                                <div className="col-span-2">
+                                  <Label>อีเมล</Label>
+                                  <p className="text-sm text-muted-foreground mt-1">{report.reporter_email || "ไม่ระบุ"}</p>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
                           {/* สถานะและการดำเนินการ */}
                           <div className="border rounded-lg p-4">
@@ -538,7 +469,7 @@ const AdminReportsPage = () => {
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <Label>วันที่รับเรื่อง</Label>
-                                <p className="text-sm text-muted-foreground mt-1">{report.createdAt}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{report.created_at}</p>
                               </div>
                               <div>
                                 <Label>สถานะ</Label>
