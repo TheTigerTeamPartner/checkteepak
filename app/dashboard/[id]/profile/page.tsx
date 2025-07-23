@@ -47,6 +47,7 @@ import {
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "@/components/ui/use-toast"
+import EmailVerification from "@/components/EmailVerification"
 
 export default function ProfileManagementPage() {
   const [activeTab, setActiveTab] = useState("basic")
@@ -572,81 +573,7 @@ export default function ProfileManagementPage() {
               <Separator />
 
               {/* Email Addresses */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <Label className="text-base font-medium flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    อีเมล
-                  </Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        contact: {
-                          ...prev.contact,
-                          emails: [...(prev.contact.emails || []), { value: "", verified: false, id: Date.now() }],
-                        },
-                      }));
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-1" /> เพิ่มอีเมล
-                  </Button>
-                </div>
-
-                {/* List of emails */}
-                <div className="space-y-3">
-                  {(formData.contact.emails || []).map((email, index) => (
-                    <div key={email.id || index} className="flex items-center gap-2">
-                      <Input
-                        type="email"
-                        value={email.value}
-                        onChange={(e) => {
-                          const updatedEmails = [...(formData.contact.emails || [])];
-                          updatedEmails[index].value = e.target.value;
-                          setFormData((prev) => ({
-                            ...prev,
-                            contact: {
-                              ...prev.contact,
-                              emails: updatedEmails,
-                            },
-                          }));
-                        }}
-                        placeholder="อีเมล"
-                        className="flex-1"
-                      />
-                      {email.verified ? (
-                        <Badge variant="outline" className="text-green-600 border-green-600">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          ยืนยันแล้ว
-                        </Badge>
-                      ) : (
-                        <Button variant="outline" size="sm">
-                          ส่งลิงก์ยืนยัน
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 px-2"
-                        onClick={() => {
-                          const updatedEmails = (formData.contact.emails || []).filter((_, i) => i !== index);
-                          setFormData((prev) => ({
-                            ...prev,
-                            contact: {
-                              ...prev.contact,
-                              emails: updatedEmails,
-                            },
-                          }));
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <EmailVerification formData={formData} setFormData={setFormData} />
 
               <Separator />
 
