@@ -43,8 +43,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: <Megaphone className="h-5 w-5" />,
     },
     {
-      href: "/admin/documents",
-      title: "ตรวจสอบเอกสาร",
+      href: "/admin/verify",
+      title: "ยืนยันตัวตน",
       icon: <ClipboardCheck className="h-5 w-5" />,
     },
     {
@@ -58,8 +58,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: <Shield className="h-5 w-5" />,
     },
     {
-      href: "/admin/statistics",
-      title: "สถิติและรายงาน",
+      href: "/admin/document",
+      title: "ยืนยันเอกสาร",
       icon: <BarChart className="h-5 w-5" />,
     },
     {
