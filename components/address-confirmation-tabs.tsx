@@ -10,6 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { getProvinces, getAmphoes, getDistricts, getZipcode } from "@/data/provinces"
 import { Trash2 } from "lucide-react"
+import { Check } from "lucide-react"
+import { Edit } from "lucide-react"
+import { Plus } from "lucide-react"
+import { X } from "lucide-react"
 
 interface AddressState {
   id: string
@@ -24,7 +28,7 @@ interface AddressState {
 export default function AddressConfirmationTabs() {
   const [activeTab, setActiveTab] = useState("agent")
   const [editingId, setEditingId] = useState<string | null>(null)
-  
+
   // Sample initial addresses
   const [agentAddresses, setAgentAddresses] = useState<AddressState[]>([
     {
@@ -37,7 +41,7 @@ export default function AddressConfirmationTabs() {
       isDefault: true
     }
   ])
-  
+
   const [propertyAddresses, setPropertyAddresses] = useState<AddressState[]>([
     {
       id: '',
@@ -78,8 +82,8 @@ export default function AddressConfirmationTabs() {
     availableSubDistricts: agentSubDistricts,
     provinces: agentProvinces
   } = useMemo(
-    () => getAvailableOptions(agentAddress),
-    [agentAddress],
+    () => getAvailableOptions(agentAddresses[0]),
+    [agentAddresses],
   )
 
   const {
@@ -87,35 +91,44 @@ export default function AddressConfirmationTabs() {
     availableSubDistricts: propertySubDistricts,
     provinces: propertyProvinces
   } = useMemo(
-    () => getAvailableOptions(propertyAddress),
-    [propertyAddress],
+    () => getAvailableOptions(propertyAddresses[0]),
+    [propertyAddresses],
   )
 
-  const handleAddressChange = (type: "agent" | "property", field: keyof AddressState, value: string) => {
-    const setter = type === "agent" ? setAgentAddress : setPropertyAddress
-    const currentAddress = type === "agent" ? agentAddress : propertyAddress
-
-    setter((prev) => {
-      const newState = { ...prev, [field]: value }
-
-      if (field === "province") {
-        newAddress.district = ""
-        newAddress.subDistrict = ""
-        newAddress.postalCode = ""
-      } else if (field === "district") {
-        newAddress.subDistrict = ""
-        newAddress.postalCode = ""
-      } else if (field === "subDistrict") {
-        const subDistrictData = getAvailableOptions(newState).availableSubDistricts.find(
-          (s) => s.subDistrict === value
-        )
-        newState.postalCode = subDistrictData ? subDistrictData.postalCode : ""
-      }
-      
-      return newAddress
-    }))
+  const handleAddressChange = (
+    type: "agent" | "property",
+    id: string,
+    field: keyof AddressState,
+    value: string
+  ) => {
+    const setter = type === "agent" ? setAgentAddresses : setPropertyAddresses
+    const currentList = type === "agent" ? agentAddresses : propertyAddresses
+  
+    setter(prev =>
+      prev.map(addr => {
+        if (addr.id !== id) return addr
+  
+        const updated = { ...addr, [field]: value }
+  
+        if (field === "province") {
+          updated.district = ""
+          updated.subDistrict = ""
+          updated.postalCode = ""
+        } else if (field === "district") {
+          updated.subDistrict = ""
+          updated.postalCode = ""
+        } else if (field === "subDistrict") {
+          const subDistrictData = getAvailableOptions(updated).availableSubDistricts.find(
+            (s) => s.subDistrict === value
+          )
+          updated.postalCode = subDistrictData ? subDistrictData.postalCode : ""
+        }
+  
+        return updated
+      })
+    )
   }
-
+  
   const handleAddAddress = (type: "agent" | "property") => {
     const newAddress: AddressState = {
       id: Date.now().toString(),
@@ -125,13 +138,13 @@ export default function AddressConfirmationTabs() {
       subDistrict: "",
       postalCode: "",
     }
-    
+
     if (type === "agent") {
       setAgentAddresses(prev => [...prev, newAddress])
     } else {
       setPropertyAddresses(prev => [...prev, newAddress])
     }
-    
+
     setEditingId(newAddress.id)
   }
 
@@ -161,14 +174,14 @@ export default function AddressConfirmationTabs() {
 
   const handleSetDefault = (type: "agent" | "property", id: string) => {
     if (type === "agent") {
-      setAgentAddresses(prev => 
+      setAgentAddresses(prev =>
         prev.map(addr => ({
           ...addr,
           isDefault: addr.id === id
         }))
       )
     } else {
-      setPropertyAddresses(prev => 
+      setPropertyAddresses(prev =>
         prev.map(addr => ({
           ...addr,
           isDefault: addr.id === id
@@ -179,10 +192,10 @@ export default function AddressConfirmationTabs() {
 
   const renderAddressForm = (address: AddressState, type: "agent" | "property") => {
     const isEditing = editingId === address.id
-    const { 
-      availableDistricts, 
+    const {
+      availableDistricts,
       availableSubDistricts,
-      provinces 
+      provinces
     } = getAvailableOptions(address)
 
     return (
@@ -194,7 +207,7 @@ export default function AddressConfirmationTabs() {
                 <Check className="w-4 h-4 mr-1" /> ที่อยู่หลัก
               </div>
             )}
-            
+
             <div className="grid gap-2">
               <Label htmlFor={`${type}-${address.id}-full-address`}>ที่อยู่ทั่วไป</Label>
               <Textarea
@@ -206,7 +219,7 @@ export default function AddressConfirmationTabs() {
                 disabled={!isEditing}
               />
             </div>
-            
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="grid gap-2">
                 <Label htmlFor={`${type}-${address.id}-province`}>จังหวัด</Label>
@@ -227,7 +240,7 @@ export default function AddressConfirmationTabs() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="grid gap-2">
                 <Label htmlFor={`${type}-${address.id}-district`}>อำเภอ/เขต</Label>
                 <Select
@@ -247,28 +260,20 @@ export default function AddressConfirmationTabs() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="grid gap-2">
                 <Label htmlFor={`${type}-${address.id}-sub-district`}>ตำบล/แขวง</Label>
-                <Select
-                  value={address.subDistrict}
-                  onValueChange={(value) => handleAddressChange(type, address.id, "subDistrict", value)}
-                  disabled={!isEditing || !address.district}
-                >
-                  <SelectTrigger id={`${type}-${address.id}-sub-district`}>
-                    <SelectValue placeholder="เลือกตำบล/แขวง" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSubDistricts.map((subDistrict) => (
-                      <SelectItem key={subDistrict.value} value={subDistrict.value}>
-                        {subDistrict.subDistrict}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+  value={address.subDistrict}
+  onChange={(e) => handleAddressChange(type, address.id, "subDistrict", e.target.value)}
+  disabled={!isEditing || !address.district}
+  placeholder="เลือกตำบล/แขวง"
+  id={`${type}-${address.id}-sub-district`}
+/>
+
               </div>
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor={`${type}-${address.id}-postal-code`}>เลขไปรษณีย์</Label>
               <Input
@@ -279,31 +284,31 @@ export default function AddressConfirmationTabs() {
                 disabled={!isEditing}
               />
             </div>
-            
+
             <div className="flex justify-between items-center">
               {!address.isDefault && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleSetDefault(type, address.id)}
                   disabled={isEditing}
                 >
                   ตั้งเป็นที่อยู่หลัก
                 </Button>
               )}
-              
+
               <div className="flex gap-2">
                 {isEditing ? (
                   <>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={handleCancelEdit}
                     >
                       <X className="w-4 h-4 mr-1" /> ยกเลิก
                     </Button>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       onClick={() => handleSaveAddress(type, address.id)}
                     >
                       <Check className="w-4 h-4 mr-1" /> บันทึก
@@ -311,9 +316,9 @@ export default function AddressConfirmationTabs() {
                   </>
                 ) : (
                   <>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleEditAddress(address.id)}
                     >
                       <Edit className="w-4 h-4 mr-1" /> แก้ไข
@@ -353,10 +358,10 @@ export default function AddressConfirmationTabs() {
         <TabsContent value="agent" className="mt-4">
           <div className="space-y-4">
             {agentAddresses.map(address => renderAddressForm(address, "agent"))}
-            
-            <Button 
-              variant="outline" 
-              className="w-full" 
+
+            <Button
+              variant="outline"
+              className="w-full"
               onClick={() => handleAddAddress("agent")}
             >
               <Plus className="w-4 h-4 mr-2" /> เพิ่มที่อยู่ใหม่
@@ -368,10 +373,10 @@ export default function AddressConfirmationTabs() {
         <TabsContent value="property" className="mt-4">
           <div className="space-y-4">
             {propertyAddresses.map(address => renderAddressForm(address, "property"))}
-            
-            <Button 
-              variant="outline" 
-              className="w-full" 
+
+            <Button
+              variant="outline"
+              className="w-full"
               onClick={() => handleAddAddress("property")}
             >
               <Plus className="w-4 h-4 mr-2" /> เพิ่มที่อยู่ใหม่
