@@ -18,7 +18,17 @@ import {
   Settings,
   Bell,
   Crown,
+  FileCheck,
 } from "lucide-react";
+import {
+  Users,
+  FileText,
+  BarChart,
+  Home,
+  ClipboardCheck,
+  Shield,
+  Megaphone,
+} from "lucide-react"
 import SidebarNav from "@/components/sidebarnav";
 
 export default function Header() {
@@ -59,38 +69,74 @@ export default function Header() {
 
   const memberItems = user
     ? [
-        {
-          href: `/dashboard/${user.id}`,
-          title: "ภาพรวม",
-          icon: <LayoutDashboard className="h-5 w-5" />,
-        },
-        {
-          href: `/dashboard/${user.id}/profile`,
-          title: "จัดการโปรไฟล์",
-          icon: <User className="h-5 w-5" />,
-        },
-        {
-          href: `/dashboard/${user.id}/verification`,
-          title: "สถานะการยืนยัน",
-          icon: <CheckCircle className="h-5 w-5" />,
-        },
-        {
-          href: `/dashboard/${user.id}/settings`,
-          title: "ตั้งค่าบัญชี",
-          icon: <Settings className="h-5 w-5" />,
-        },
-        {
-          href: `/dashboard/${user.id}/notifications`,
-          title: "การแจ้งเตือน",
-          icon: <Bell className="h-5 w-5" />,
-        },
-        {
-          href: `/dashboard/${user.id}/reports/subscription`,
-          title: "การสมัครสมาชิก",
-          icon: <Crown className="h-5 w-5" />,
-        },
+      {
+        href: `/dashboard/${user.id}/profile`,
+        title: "จัดการโปรไฟล์",
+        icon: <User className="h-5 w-5" />,
+      },
+    
+      {
+        href: `/dashboard/${user.id}/settings`,
+        title: "ตั้งค่าบัญชี",
+        icon: <Settings className="h-5 w-5" />,
+      },
+      {
+        href: `/dashboard/${user.id}/confirm`,
+        title: "ยืนยันเอกสาร",
+        icon: <FileCheck className="h-5 w-5" />,
+      },
+
       ]
     : [];
+    const isAdmin = pathname?.startsWith("/admin");
+    const adminItems = [
+      {
+        href: "/admin",
+        title: "ภาพรวม",
+        icon: <LayoutDashboard className="h-5 w-5" />,
+      },
+      {
+        href: "/admin/users",
+        title: "จัดการผู้ใช้",
+        icon: <Users className="h-5 w-5" />,
+      },
+      {
+        href: "/admin/marketing",
+        title: "การตลาด",
+        icon: <Megaphone className="h-5 w-5" />,
+      },
+      {
+        href: "/admin/verify",
+        title: "ยืนยันตัวตน",
+        icon: <ClipboardCheck className="h-5 w-5" />,
+      },
+      {
+        href: "/admin/reports",
+        title: "รับเรื่องร้องเรียน",
+        icon: <FileText className="h-5 w-5" />,
+      },
+      {
+        href: "/admin/fraudsters",
+        title: "มิจฉาชีพ",
+        icon: <Shield className="h-5 w-5" />,
+      },
+      {
+        href: "/admin/document",
+        title: "ยืนยันเอกสาร",
+        icon: <BarChart className="h-5 w-5" />,
+      },
+      {
+        href: "/admin/settings",
+        title: "ตั้งค่าระบบ",
+        icon: <Settings className="h-5 w-5" />,
+      },
+      {
+        href: "/admin/notifications",
+        title: "การแจ้งเตือน",
+        icon: <Bell className="h-5 w-5" />,
+      },
+    ];
+    
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -98,21 +144,22 @@ export default function Header() {
         {/* มือถือ */}
         <div className="flex items-center w-full md:hidden justify-between">
           {/* Hamburger menu เฉพาะหน้า dashboard */}
-          {isDashboard && user ? (
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="ml-0">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-64">
-                <SidebarNav items={memberItems} />
-              </SheetContent>
-            </Sheet>
-          ) : null}
+          {(isDashboard || isAdmin) && user ? (
+  <Sheet>
+    <SheetTrigger asChild>
+      <Button variant="ghost" size="icon" className="ml-0">
+        <Menu className="h-6 w-6" />
+      </Button>
+    </SheetTrigger>
+    <SheetContent side="left" className="w-64">
+      <SidebarNav items={isAdmin ? adminItems : memberItems} />
+    </SheetContent>
+  </Sheet>
+) : null}
+
 
           {/* Logo มือถือ */}
-          {isDashboard ? (
+          {isDashboard || isAdmin ? (
             // โลโก้กลาง
             <Link
               href="/"

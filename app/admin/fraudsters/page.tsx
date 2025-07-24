@@ -87,147 +87,7 @@ interface Case {
 }
 
 const mockFraudsters: Fraudster[] = [
-  {
-    id: "1",
-    name: "สมชาย ใจดี",
-    email: "somchai.fake@gmail.com",
-    phone: "081-234-5678",
-    address: "123/45 ซอยลาดพร้าว 15 เขตจตุจักร กรุงเทพฯ 10900",
-    lineId: "@somchai_property",
-    facebookPage: "facebook.com/somchai.property.fake",
-    instagramAccount: "@somchai_realestate",
-    website: "www.somchai-property.com",
-    bankAccounts: [
-      {
-        id: "1",
-        bankName: "ธนาคารกสิกรไทย",
-        accountNumber: "123-4-56789-0",
-        accountName: "นายสมชาย ใจดี",
-        verified: false,
-      },
-      {
-        id: "2",
-        bankName: "ธนาคารไทยพาณิชย์",
-        accountNumber: "987-6-54321-0",
-        accountName: "นายสมชาย ใจดี",
-        verified: false,
-      },
-    ],
-    cases: [
-      {
-        id: "1",
-        description: "หลอกขายคอนโดปลอม โครงการ The Luxury Condo",
-        date: "2024-01-15",
-        status: "investigating",
-        victimName: "นางสาวมาลี สวยงาม",
-        fraudType: "หลอกขายที่พัก",
-        evidence: ["screenshot_transfer.jpg", "fake_contract.pdf"],
-      },
-      {
-        id: "2",
-        description: "หลอกให้จ่ายค่ามัดจำห้องเช่าปลอม",
-        date: "2024-02-10",
-        status: "open",
-        victimName: "นายจิรายุ มั่งมี",
-        fraudType: "หลอกเก็บเงินมัดจำ",
-        evidence: ["line_chat.jpg", "fake_receipt.jpg"],
-      },
-    ],
-    verified: false,
-    riskLevel: "high",
-    status: "pending",
-    dateAdded: "2024-03-01",
-    reportedBy: "ระบบรับเรื่องร้องเรียน",
-  },
-  {
-    id: "2",
-    name: "วิไล หลอกลวง",
-    email: "wilai.scammer@hotmail.com",
-    phone: "089-876-5432",
-    address: "456/78 ถนนสุขุมวิท 21 เขตวัฒนา กรุงเทพฯ 10110",
-    lineId: "@wilai_agent",
-    facebookPage: "facebook.com/wilai.realestate.pro",
-    instagramAccount: "@wilai_luxury_homes",
-    website: "www.wilai-homes.net",
-    bankAccounts: [
-      {
-        id: "3",
-        bankName: "ธนาคารกรุงเทพ",
-        accountNumber: "555-1-23456-7",
-        accountName: "นางวิไล หลอกลวง",
-        verified: false,
-      },
-    ],
-    cases: [
-      {
-        id: "3",
-        description: "แอบอ้างเป็นนายหน้าอสังหาริมทรัพย์ หลอกเก็บค่าคอมมิชชั่น",
 
-        date: "2024-01-20",
-        status: "closed",
-        victimName: "นายประยุทธ์ ซื่อสัตย์",
-        fraudType: "นายหน้าปลอม",
-        evidence: ["fake_license.jpg", "commission_receipt.pdf"],
-      },
-      {
-        id: "4",
-        description: "หลอกขายบ้านที่ไม่มีอยู่จริง",
-        date: "2024-02-05",
-        status: "investigating",
-        victimName: "นางสุดา ดีใจ",
-        fraudType: "หลอกขายที่พัก",
-        evidence: ["fake_photos.zip", "forged_documents.pdf"],
-      },
-    ],
-    verified: true,
-    riskLevel: "high",
-    status: "verified",
-    dateAdded: "2024-02-15",
-    reportedBy: "เจ้าหน้าที่ตรวจสอบ",
-  },
-  {
-    id: "3",
-    name: "ดำรง โกงเงิน",
-    email: "damrong.fraud@yahoo.com",
-    phone: "092-111-2222",
-    address: "789/12 ซอยรามคำแหง 24 เขตวังทองหลาง กรุงเทพฯ 10310",
-    lineId: "@damrong_property",
-    facebookPage: "facebook.com/damrong.investment",
-    instagramAccount: "@damrong_rich",
-    website: "www.damrong-invest.com",
-    bankAccounts: [
-      {
-        id: "4",
-        bankName: "ธนาคารกรุงไทย",
-        accountNumber: "777-8-99999-1",
-        accountName: "นายดำรง โกงเงิน",
-        verified: false,
-      },
-      {
-        id: "5",
-        bankName: "ธนาคารทหารไทยธนชาต",
-        accountNumber: "333-2-11111-5",
-        accountName: "นายดำรง โกงเงิน",
-        verified: false,
-      },
-    ],
-    cases: [
-      {
-        id: "5",
-        description: "หลอกลงทุนโครงการคอนโดปลอม",
-        date: "2024-01-10",
-        status: "open",
-        victimName: "นายสมศักดิ์ รวยเร็ว",
-        fraudType: "หลอกลงทุน",
-        evidence: ["investment_proposal.pdf", "fake_permits.jpg"],
-      },
-    ],
-    verified: false,
-    riskLevel: "high",
-    status: "rejected",
-    dateAdded: "2024-01-25",
-    reportedBy: "ระบบรับเรื่องร้องเรียน",
-  },
 ]
 
 const FraudstersPage = () => {
@@ -434,10 +294,7 @@ const FraudstersPage = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          <Button>
-            <FileText className="mr-2 h-4 w-4" />
-            ดึงจากเรื่องร้องเรียน
-          </Button>
+
           <Dialog>
             <DialogTrigger asChild>
               <Button>
@@ -451,95 +308,19 @@ const FraudstersPage = () => {
                 <DialogDescription>เลือกประเภทข้อมูลที่ต้องการเพิ่ม</DialogDescription>
               </DialogHeader>
 
-              <Tabs defaultValue="select-type" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="select-type">เลือกประเภทข้อมูล</TabsTrigger>
-                  <TabsTrigger value="add-data">กรอกข้อมูล</TabsTrigger>
-                </TabsList>
 
-                <TabsContent value="select-type" className="space-y-4">
-                  <div className="grid gap-4 py-4">
-                    <h3 className="font-medium">เลือกประเภทข้อมูลที่ต้องการเพิ่ม:</h3>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="id-card" className="rounded" />
-                        <Label htmlFor="id-card" className="flex items-center">
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          เลขบัตรประชาชน
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="phone" className="rounded" />
-                        <Label htmlFor="phone" className="flex items-center">
-                          <Phone className="mr-2 h-4 w-4" />
-                          เบอร์โทรศัพท์
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="facebook" className="rounded" />
-                        <Label htmlFor="facebook" className="flex items-center">
-                          <Facebook className="mr-2 h-4 w-4" />
-                          Facebook Page
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="instagram" className="rounded" />
-                        <Label htmlFor="instagram" className="flex items-center">
-                          <Instagram className="mr-2 h-4 w-4" />
-                          Instagram
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="line" className="rounded" />
-                        <Label htmlFor="line" className="flex items-center">
-                          <MessageCircle className="mr-2 h-4 w-4" />
-                          Line ID
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="line-oa" className="rounded" />
-                        <Label htmlFor="line-oa" className="flex items-center">
-                          <MessageCircle className="mr-2 h-4 w-4" />
-                          Line OA
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="tiktok" className="rounded" />
-                        <Label htmlFor="tiktok" className="flex items-center">
-                          <Globe className="mr-2 h-4 w-4" />
-                          TikTok
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="bank-account" className="rounded" />
-                        <Label htmlFor="bank-account" className="flex items-center">
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          เลขบัญชีธนาคาร
-                        </Label>
-                      </div>
-                    </div>
-
-                    <div className="pt-4">
-                      <Button className="w-full">ดำเนินการต่อ</Button>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="add-data" className="space-y-4">
                   <div className="grid gap-4 py-4">
                     <h3 className="font-medium">กรอกข้อมูลมิจฉาชีพ:</h3>
 
                     {/* ข้อมูลที่พัก */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm text-muted-foreground">ข้อมูลที่พัก</h4>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="scammer-name" className="text-right">
+                          ชื่อผู้ที่โกง
+                        </Label>
+                        <Input id="scammer-name" placeholder="ชื่อผู้ที่โกง" className="col-span-3" />
+                      </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="accommodation-name" className="text-right">
                           ชื่อที่พัก
@@ -670,8 +451,7 @@ const FraudstersPage = () => {
                       <Button>เพิ่มข้อมูลมิจฉาชีพ</Button>
                     </div>
                   </div>
-                </TabsContent>
-              </Tabs>
+
             </DialogContent>
           </Dialog>
         </div>
