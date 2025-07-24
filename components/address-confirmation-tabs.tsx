@@ -8,37 +8,49 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { getProvinces, getAmphoes, getDistricts,  } from "@/data/thai-address-data"
-import { Trash2 } from "lucide-react"
+import { getProvinces, getAmphoes, getDistricts } from "@/data/thai-address-data"
+import { Trash2, Edit, Plus, Check, X } from "lucide-react"
 
 interface AddressState {
+  id: string
   fullAddress: string
   province: string
   district: string
   subDistrict: string
   postalCode: string
+  isDefault?: boolean
 }
 
 export default function AddressConfirmationTabs() {
   const [activeTab, setActiveTab] = useState("agent")
+  const [editingId, setEditingId] = useState<string | null>(null)
+  
+  // Sample initial addresses
+  const [agentAddresses, setAgentAddresses] = useState<AddressState[]>([
+    {
+      id: '',
+      fullAddress: "",
+      province: "",
+      district: "",
+      subDistrict: "",
+      postalCode: "",
+      isDefault: true
+    }
+  ])
+  
+  const [propertyAddresses, setPropertyAddresses] = useState<AddressState[]>([
+    {
+      id: '',
+      fullAddress: "",
+      province: "",
+      district: "",
+      subDistrict: "",
+      postalCode: "",
+      isDefault: true
+    }
+  ])
 
-  const [agentAddress, setAgentAddress] = useState<AddressState>({
-    fullAddress: "",
-    province: "",
-    district: "",
-    subDistrict: "",
-    postalCode: "",
-  })
-
-  const [propertyAddress, setPropertyAddress] = useState<AddressState>({
-    fullAddress: "",
-    province: "",
-    district: "",
-    subDistrict: "",
-    postalCode: "",
-  })
-
-  const getAvailableOptions = (address: AddressState) => {
+  const getAvailableOptions = (address: Partial<AddressState>) => {
     const provinces = getProvinces()
     const availableAmphoes = address.province ? getAmphoes(address.province) : []
     
@@ -51,7 +63,7 @@ export default function AddressConfirmationTabs() {
       getDistricts(address.province, address.district).map((district: string) => ({
         subDistrict: district,
         value: district.toLowerCase().replace(/\s+/g, '_') + '_sub',
-        postalCode: ''
+        postalCode: '' // You might want to populate this with actual postal codes
       })) : []
 
     return { 
@@ -61,77 +73,263 @@ export default function AddressConfirmationTabs() {
     }
   }
 
-  const { 
-    availableDistricts: agentDistricts, 
-    availableSubDistricts: agentSubDistricts,
-    provinces: agentProvinces 
-  } = useMemo(
-    () => getAvailableOptions(agentAddress),
-    [agentAddress],
-  )
-
-  const { 
-    availableDistricts: propertyDistricts, 
-    availableSubDistricts: propertySubDistricts,
-    provinces: propertyProvinces 
-  } = useMemo(
-    () => getAvailableOptions(propertyAddress),
-    [propertyAddress],
-  )
-
-  const handleAddressChange = (type: "agent" | "property", field: keyof AddressState, value: string) => {
-    const setter = type === "agent" ? setAgentAddress : setPropertyAddress
-    const currentAddress = type === "agent" ? agentAddress : propertyAddress
-
-    setter((prev) => {
-      const newState = { ...prev, [field]: value }
-
+  const handleAddressChange = (
+    type: "agent" | "property", 
+    id: string, 
+    field: keyof AddressState, 
+    value: string
+  ) => {
+    const setter = type === "agent" ? setAgentAddresses : setPropertyAddresses
+    const addresses = type === "agent" ? agentAddresses : propertyAddresses
+    
+    setter(prev => prev.map(address => {
+      if (address.id !== id) return address
+      
+      const newAddress = { ...address, [field]: value }
+      
+      // Reset dependent fields when province or district changes
       if (field === "province") {
-        newState.district = ""
-        newState.subDistrict = ""
-        newState.postalCode = ""
+        newAddress.district = ""
+        newAddress.subDistrict = ""
+        newAddress.postalCode = ""
       } else if (field === "district") {
-        newState.subDistrict = ""
-        newState.postalCode = ""
+        newAddress.subDistrict = ""
+        newAddress.postalCode = ""
       } else if (field === "subDistrict") {
-        const selectedSubDistrict = getAvailableOptions(newState).availableSubDistricts.find((s) => s.value === value)
-        newState.postalCode = selectedSubDistrict ? selectedSubDistrict.postalCode : ""
+        const options = getAvailableOptions(newAddress)
+        const selectedSubDistrict = options.availableSubDistricts.find(s => s.value === value)
+        newAddress.postalCode = selectedSubDistrict ? selectedSubDistrict.postalCode : ""
       }
-      return newState
-    })
+      
+      return newAddress
+    }))
   }
 
-  const handleDeleteAddress = () => {
-    if (activeTab === "agent") {
-      setAgentAddress({
-        fullAddress: "",
-        province: "",
-        district: "",
-        subDistrict: "",
-        postalCode: "",
-      })
+  const handleAddAddress = (type: "agent" | "property") => {
+    const newAddress: AddressState = {
+      id: Date.now().toString(),
+      fullAddress: "",
+      province: "",
+      district: "",
+      subDistrict: "",
+      postalCode: "",
+    }
+    
+    if (type === "agent") {
+      setAgentAddresses(prev => [...prev, newAddress])
     } else {
-      setPropertyAddress({
-        fullAddress: "",
-        province: "",
-        district: "",
-        subDistrict: "",
-        postalCode: "",
-      })
+      setPropertyAddresses(prev => [...prev, newAddress])
+    }
+    
+    setEditingId(newAddress.id)
+  }
+
+  const handleEditAddress = (id: string) => {
+    setEditingId(id)
+  }
+
+  const handleSaveAddress = (type: "agent" | "property", id: string) => {
+    setEditingId(null)
+    // Here you would typically save to your backend
+    window.alert(`บันทึกที่อยู่${type === "agent" ? "ของผู้ยืนยันตัวตน" : "ของอสังหาริมทรัพย์"}สำเร็จ!`)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const handleDeleteAddress = (type: "agent" | "property", id: string) => {
+    if (window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?")) {
+      if (type === "agent") {
+        setAgentAddresses(prev => prev.filter(addr => addr.id !== id))
+      } else {
+        setPropertyAddresses(prev => prev.filter(addr => addr.id !== id))
+      }
     }
   }
 
-  const handleSaveAddress = (type: "agent" | "property") => {
-    // ตัวอย่างการแสดง alert
-    window.alert(`บันทึกที่อยู่${type === "agent" ? "ของผู้ยืนยันตัวตน" : "ของอสังหาริมทรัพย์"}สำเร็จ!`);
-    // ต่อไปสามารถเพิ่ม logic การบันทึกข้อมูล (เช่น เรียก API) ได้ที่นี่
+  const handleSetDefault = (type: "agent" | "property", id: string) => {
+    if (type === "agent") {
+      setAgentAddresses(prev => 
+        prev.map(addr => ({
+          ...addr,
+          isDefault: addr.id === id
+        }))
+      )
+    } else {
+      setPropertyAddresses(prev => 
+        prev.map(addr => ({
+          ...addr,
+          isDefault: addr.id === id
+        }))
+      )
+    }
+  }
+
+  const renderAddressForm = (address: AddressState, type: "agent" | "property") => {
+    const isEditing = editingId === address.id
+    const { 
+      availableDistricts, 
+      availableSubDistricts,
+      provinces 
+    } = getAvailableOptions(address)
+
+    return (
+      <Card key={address.id} className="mb-4">
+        <CardContent className="pt-6">
+          <div className="grid gap-4">
+            {address.isDefault && (
+              <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-md text-sm inline-flex items-center">
+                <Check className="w-4 h-4 mr-1" /> ที่อยู่หลัก
+              </div>
+            )}
+            
+            <div className="grid gap-2">
+              <Label htmlFor={`${type}-${address.id}-full-address`}>ที่อยู่ทั่วไป</Label>
+              <Textarea
+                id={`${type}-${address.id}-full-address`}
+                placeholder="บ้านเลขที่, หมู่, ซอย, ถนน"
+                value={address.fullAddress}
+                onChange={(e) => handleAddressChange(type, address.id, "fullAddress", e.target.value)}
+                className="min-h-[100px]"
+                disabled={!isEditing}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-2">
+                <Label htmlFor={`${type}-${address.id}-province`}>จังหวัด</Label>
+                <Select
+                  value={address.province}
+                  onValueChange={(value) => handleAddressChange(type, address.id, "province", value)}
+                  disabled={!isEditing}
+                >
+                  <SelectTrigger id={`${type}-${address.id}-province`}>
+                    <SelectValue placeholder="เลือกจังหวัด" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {provinces.map((province) => (
+                      <SelectItem key={province} value={province}>
+                        {province}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor={`${type}-${address.id}-district`}>อำเภอ/เขต</Label>
+                <Select
+                  value={address.district}
+                  onValueChange={(value) => handleAddressChange(type, address.id, "district", value)}
+                  disabled={!isEditing || !address.province}
+                >
+                  <SelectTrigger id={`${type}-${address.id}-district`}>
+                    <SelectValue placeholder="เลือกอำเภอ/เขต" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableDistricts.map((district) => (
+                      <SelectItem key={district.value} value={district.district}>
+                        {district.district}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor={`${type}-${address.id}-sub-district`}>ตำบล/แขวง</Label>
+                <Select
+                  value={address.subDistrict}
+                  onValueChange={(value) => handleAddressChange(type, address.id, "subDistrict", value)}
+                  disabled={!isEditing || !address.district}
+                >
+                  <SelectTrigger id={`${type}-${address.id}-sub-district`}>
+                    <SelectValue placeholder="เลือกตำบล/แขวง" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSubDistricts.map((subDistrict) => (
+                      <SelectItem key={subDistrict.value} value={subDistrict.value}>
+                        {subDistrict.subDistrict}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor={`${type}-${address.id}-postal-code`}>เลขไปรษณีย์</Label>
+              <Input
+                id={`${type}-${address.id}-postal-code`}
+                placeholder="เลขไปรษณีย์"
+                value={address.postalCode}
+                onChange={(e) => handleAddressChange(type, address.id, "postalCode", e.target.value)}
+                disabled={!isEditing}
+              />
+            </div>
+            
+            <div className="flex justify-between items-center">
+              {!address.isDefault && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => handleSetDefault(type, address.id)}
+                  disabled={isEditing}
+                >
+                  ตั้งเป็นที่อยู่หลัก
+                </Button>
+              )}
+              
+              <div className="flex gap-2">
+                {isEditing ? (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleCancelEdit}
+                    >
+                      <X className="w-4 h-4 mr-1" /> ยกเลิก
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleSaveAddress(type, address.id)}
+                    >
+                      <Check className="w-4 h-4 mr-1" /> บันทึก
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleEditAddress(address.id)}
+                    >
+                      <Edit className="w-4 h-4 mr-1" /> แก้ไข
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleDeleteAddress(type, address.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
     <div className="w-full space-y-6">
       <div>
-      <h1 className="text-2xl md:text-2xl font-bold text-gray-900">ยืนยันที่อยู่</h1>
-      <p className="text-gray-600">กรุณากรอกข้อมูลที่อยู่ปัจจุบันของคุณให้ครบถ้วน เพื่อใช้ในการยืนยันตัวตน</p>
+        <h1 className="text-2xl md:text-2xl font-bold text-gray-900">ยืนยันที่อยู่</h1>
+        <p className="text-gray-600">กรุณากรอกข้อมูลที่อยู่ปัจจุบันของคุณให้ครบถ้วน เพื่อใช้ในการยืนยันตัวตน</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
@@ -141,206 +339,31 @@ export default function AddressConfirmationTabs() {
         </TabsList>
 
         <TabsContent value="agent" className="mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="agent-full-address">ที่อยู่ทั่วไป</Label>
-                  <Textarea
-                    id="agent-full-address"
-                    placeholder="บ้านเลขที่, หมู่, ซอย, ถนน"
-                    value={agentAddress.fullAddress}
-                    onChange={(e) => handleAddressChange("agent", "fullAddress", e.target.value)}
-                    className="min-h-[100px]"
-                  />
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <div className="grid gap-2">
-                    <Label htmlFor="agent-province">จังหวัด</Label>
-                    <Select
-                      value={agentAddress.province}
-                      onValueChange={(value) => handleAddressChange("agent", "province", value)}
-                    >
-                      <SelectTrigger id="agent-province">
-                        <SelectValue placeholder="เลือกจังหวัด" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {agentProvinces.map((province) => (
-                          <SelectItem key={province} value={province}>
-                            {province}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="agent-district">อำเภอ/เขต</Label>
-                    <Select
-                      value={agentAddress.district}
-                      onValueChange={(value) => handleAddressChange("agent", "district", value)}
-                      disabled={!agentAddress.province}
-                    >
-                      <SelectTrigger id="agent-district">
-                        <SelectValue placeholder="เลือกอำเภอ/เขต" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {agentDistricts.map((district) => (
-                          <SelectItem key={district.value} value={district.value}>
-                            {district.district}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="agent-sub-district">ตำบล/แขวง</Label>
-                    <Select
-                      value={agentAddress.subDistrict}
-                      onValueChange={(value) => handleAddressChange("agent", "subDistrict", value)}
-                      disabled={!agentAddress.district}
-                    >
-                      <SelectTrigger id="agent-sub-district">
-                        <SelectValue placeholder="เลือกตำบล/แขวง" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {agentSubDistricts.map((subDistrict) => (
-                          <SelectItem key={subDistrict.value} value={subDistrict.value}>
-                            {subDistrict.subDistrict}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="agent-postal-code">เลขไปรษณีย์</Label>
-                  <Input
-  id="agent-postal-code"
-  placeholder="เลขไปรษณีย์"
-  value={agentAddress.postalCode}
-  onChange={(e) => handleAddressChange("agent", "postalCode", e.target.value)}
-/>
-
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button className="bg-yellow-500 text-white">แก้ไขข้อมูล</Button>
-                  <Button className="bg-blue-500 text-white">เพิ่มที่อยู่</Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700 px-2"
-                    onClick={handleDeleteAddress}
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </Button>
-                </div>
-                <Button className="w-full mt-1" onClick={() => handleSaveAddress("agent")}>
-                  บันทึกที่อยู่ของผู้ยืนยันตัวตน
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            {agentAddresses.map(address => renderAddressForm(address, "agent"))}
+            
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => handleAddAddress("agent")}
+            >
+              <Plus className="w-4 h-4 mr-2" /> เพิ่มที่อยู่ใหม่
+            </Button>
+          </div>
         </TabsContent>
 
         <TabsContent value="property" className="mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="property-full-address">ที่อยู่ทั่วไป</Label>
-                  <Textarea
-                    id="property-full-address"
-                    placeholder="บ้านเลขที่, หมู่, ซอย, ถนน"
-                    value={propertyAddress.fullAddress}
-                    onChange={(e) => handleAddressChange("property", "fullAddress", e.target.value)}
-                    className="min-h-[100px]"
-                  />
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <div className="grid gap-2">
-                    <Label htmlFor="property-province">จังหวัด</Label>
-                    <Select
-                      value={propertyAddress.province}
-                      onValueChange={(value) => handleAddressChange("property", "province", value)}
-                    >
-                      <SelectTrigger id="property-province">
-                        <SelectValue placeholder="เลือกจังหวัด" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {propertyProvinces.map((province) => (
-                          <SelectItem key={province} value={province}>
-                            {province}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="property-district">อำเภอ/เขต</Label>
-                    <Select
-                      value={propertyAddress.district}
-                      onValueChange={(value) => handleAddressChange("property", "district", value)}
-                      disabled={!propertyAddress.province}
-                    >
-                      <SelectTrigger id="property-district">
-                        <SelectValue placeholder="เลือกอำเภอ/เขต" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {propertyDistricts.map((district) => (
-                          <SelectItem key={district.value} value={district.value}>
-                            {district.district}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="property-sub-district">ตำบล/แขวง</Label>
-                    <Select
-                      value={propertyAddress.subDistrict}
-                      onValueChange={(value) => handleAddressChange("property", "subDistrict", value)}
-                      disabled={!propertyAddress.district}
-                    >
-                      <SelectTrigger id="property-sub-district">
-                        <SelectValue placeholder="เลือกตำบล/แขวง" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {propertySubDistricts.map((subDistrict) => (
-                          <SelectItem key={subDistrict.value} value={subDistrict.value}>
-                            {subDistrict.subDistrict}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="property-postal-code">เลขไปรษณีย์</Label>
-                  <Input
-                    id="property-postal-code"
-                    placeholder="เลขไปรษณีย์"
-                    value={propertyAddress.postalCode}
-                    readOnly
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button className="bg-yellow-500 text-white">แก้ไขข้อมูล</Button>
-                  <Button className="bg-blue-500 text-white">เพิ่มที่อยู่</Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700 px-2"
-                    onClick={handleDeleteAddress}
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </Button>
-                </div>
-                <Button className="w-full mt-1" onClick={() => handleSaveAddress("property")}>
-                  บันทึกที่อยู่ของอสังหาริมทรัพย์
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            {propertyAddresses.map(address => renderAddressForm(address, "property"))}
+            
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => handleAddAddress("property")}
+            >
+              <Plus className="w-4 h-4 mr-2" /> เพิ่มที่อยู่ใหม่
+            </Button>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
