@@ -1,127 +1,142 @@
-"use client"
+"use client";
 
-import { useState, useEffect, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { User as SupabaseUser } from '@supabase/supabase-js'
+import { useState, useEffect, useCallback } from "react";
+import { Complaint, ComplaintStatus, AgentProfile, UserProfile } from "@/types/complaint"; // Adjust based on your types file path
 
-interface AgentProfile {
-  user_id?: string // ใช้ user_id ตรงกับฐานข้อมูล
-  name: string
-  phone_number: string
-  line_id: string
-  bio: string
+interface User {
+  id: string;
+  role: 'agent' | 'admin' | 'user';
+  user_metadata?: {
+    full_name?: string;
+  };
+  email?: string;
 }
 
-export function useAgentDashboard(userId: string) {
-  const supabase = createClientComponentClient()
-  const router = useRouter()
+export const useAgentDashboard = (agentId: string) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [agent, setAgent] = useState<AgentProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState<string | null>(null);
+  const [authorized, setAuthorized] = useState(false);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
 
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [agent, setAgent] = useState<Partial<AgentProfile>>({
-    name: '',
-    phone_number: '',
-    line_id: '',
-    bio: ''
-  })
-  const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState('')
-  const [authorized, setAuthorized] = useState(false)
+  const fetchComplaints = useCallback(async () => {
+    try {
+      if (!agentId) {
+        throw new Error("Agent ID is required to fetch complaints.");
+      }
+
+      const response = await fetch(`/api/agent/${agentId}/complaints`, {
+        cache: 'no-store'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch complaints");
+      }
+
+      const data: Complaint[] = await response.json();
+      setComplaints(data);
+      setMessage(null);
+    } catch (error: any) {
+      console.error("Error fetching complaints:", error);
+      setMessage(error.message || "Failed to load complaints.");
+      setComplaints([]);
+    }
+  }, [agentId]);
+
+  const updateComplaintStatus = useCallback(async (
+    complaintId: string,
+    newStatus: ComplaintStatus
+  ) => {
+    try {
+      setMessage(null);
+
+      const response = await fetch(`/api/complaints/${complaintId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update complaint status on backend");
+      }
+
+      await fetchComplaints();
+      setMessage("Status updated successfully!");
+    } catch (error: any) {
+      console.error("Error updating complaint status:", error);
+      setMessage(error.message || "Error updating status.");
+      await fetchComplaints();
+      throw error;
+    }
+  }, [fetchComplaints]);
+
+  // Placeholder for profile input changes (you need to implement this based on your form)
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    // Example: setAgent(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  // Placeholder for profile submission (you need to implement this via API)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage("Profile submission logic not implemented.");
+  };
+
+  const fetchUserData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // **REPLACE WITH ACTUAL API CALLS TO FETCH USER AND AGENT PROFILE DATA**
+      // Example: const userResponse = await fetch('/api/auth/me');
+      // Example: const agentProfileResponse = await fetch(`/api/agent/profile/${agentId}`);
+
+      // MOCK DATA (REMOVE THIS WHEN IMPLEMENTING REAL API CALLS)
+      const fetchedUser: User = { id: agentId, role: 'agent', email: 'agent@example.com', user_metadata: { full_name: 'Mock Agent' } };
+      const fetchedAgent: AgentProfile = {
+          id: agentId,
+          user_id: agentId,
+          id_card_number: '1234567890123',
+          selfie_description: 'Mock selfie description',
+          verification_status: 'pending',
+      };
+      // END MOCK DATA
+
+      setUser(fetchedUser);
+      setAgent(fetchedAgent);
+
+      if (fetchedUser && fetchedUser.id === agentId && fetchedUser.role === 'agent') {
+        setAuthorized(true);
+        await fetchComplaints();
+      } else {
+        setAuthorized(false);
+        setMessage("Unauthorized access.");
+      }
+    } catch (error: any) {
+      console.error("Error initializing dashboard:", error);
+      setMessage(error.message || "Failed to initialize dashboard data.");
+      setAuthorized(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [agentId, fetchComplaints]);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      setLoading(true)
-      const {
-        data: { user },
-        error
-      } = await supabase.auth.getUser()
-
-      if (error || !user) {
-        router.push('/login')
-        return
-      }
-
-      if (user.id !== userId) {
-        router.push(`/dashboard/${user.id}`)
-        return
-      }
-
-      setUser(user)
-      setAuthorized(true)
-
-      try {
-        const response = await fetch(`/api/agents?userId=${user.id}`)
-        if (response.ok) {
-          const result = await response.json()
-          if (result.data) {
-            setAgent(result.data)
-          }
-        } else if (response.status === 404) {
-          // โปรไฟล์ยังไม่มี ให้คงค่าเริ่มต้น
-          setAgent({
-            name: '',
-            phone_number: '',
-            line_id: '',
-            bio: ''
-          })
-        } else {
-          throw new Error("ไม่สามารถโหลดข้อมูล agent ได้")
-        }
-      } catch (err) {
-        console.error("Error loading agent:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchUserData()
-  }, [supabase, userId, router])
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setAgent((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    setMessage('')
-
-    if (!user) {
-      setMessage('ต้องเข้าสู่ระบบก่อน')
-      return
-    }
-
-    try {
-      const response = await fetch('/api/agents', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ ...agent, user_id: user.id }) // ใช้ user_id ให้ตรงกับฐานข้อมูล
-      })
-
-      const result = await response.json()
-
-      if (response.ok) {
-        setMessage('บันทึกข้อมูลเรียบร้อยแล้ว')
-        setAgent(result.data) // update state ด้วยข้อมูลที่ได้กลับมา (ถ้ามี)
-      } else {
-        setMessage(`เกิดข้อผิดพลาด: ${result.error || 'ไม่ทราบสาเหตุ'}`)
-      }
-    } catch (err) {
-      console.error('Error submitting agent profile:', err)
-      setMessage('เกิดข้อผิดพลาดในการส่งข้อมูล')
-    }
-  }
+    fetchUserData();
+  }, [fetchUserData]);
 
   return {
     user,
     agent,
     loading,
-    message,
+        message,
     authorized,
     handleInputChange,
     handleSubmit,
-    setAgent
-  }
-}
+    updateComplaintStatus,
+    complaints,
+    fetchUserData,
+  };
+};

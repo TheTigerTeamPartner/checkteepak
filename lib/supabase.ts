@@ -1,37 +1,44 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClientComponentClient, createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-// ตรวจสอบและกำหนดค่า environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// ตรวจสอบว่ามีค่า environment variables จำเป็นหรือไม่
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Missing environment variables NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY")
+  throw new Error("Missing environment variables: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
 }
 
-// สร้าง client สำหรับ client-side operations
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-})
+/**
+ * Creates a Supabase client for Client Components.
+ */
+export const getClientSupabase = () => {
+  return createClientComponentClient({
+    supabaseUrl,
+    supabaseKey: supabaseAnonKey,
+  });
+};
 
-// ตรวจสอบ version ของ client
-console.log('Supabase client version:', supabase.version)
+/**
+ * Creates a Supabase client for Server Components and API Routes.
+ */
+export const getServerSupabase = () => {
+  return createServerComponentClient({ cookies });
+};
 
-// ฟังก์ชันช่วยสำหรับการตรวจสอบ error จาก Supabase
+/**
+ * Helper function to check if an error is an instance of Error and return its message.
+ */
 export function checkSupabaseError(error: unknown): string {
   if (error instanceof Error) {
-    return error.message
+    return error.message;
   }
-  return "เกิดข้อผิดพลาดในการเชื่อมต่อกับฐานข้อมูล"
+  return "An unknown error occurred with the database connection.";
 }
 
-// ฟังก์ชันช่วยสำหรับการ format ข้อความ error
+/**
+ * Helper function to format a Supabase-related error message.
+ */
 export function formatSupabaseError(error: unknown): string {
-  const errorMessage = checkSupabaseError(error)
-  return `เกิดข้อผิดพลาด: ${errorMessage}`
+  const errorMessage = checkSupabaseError(error);
+  return `Database operation failed: ${errorMessage}`;
 }
