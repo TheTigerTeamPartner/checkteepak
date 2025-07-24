@@ -2,14 +2,14 @@
 
 import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { getProvinces, getAmphoes, getDistricts } from "@/data/thai-address-data"
-import { Trash2, Edit, Plus, Check, X } from "lucide-react"
+import { getProvinces, getAmphoes, getDistricts, getZipcode } from "@/data/provinces"
+import { Trash2 } from "lucide-react"
 
 interface AddressState {
   id: string
@@ -53,41 +53,51 @@ export default function AddressConfirmationTabs() {
   const getAvailableOptions = (address: Partial<AddressState>) => {
     const provinces = getProvinces()
     const availableAmphoes = address.province ? getAmphoes(address.province) : []
-    
+
     const availableDistricts = availableAmphoes.map((amphoe: string) => ({
       district: amphoe,
       value: amphoe.toLowerCase().replace(/\s+/g, '_')
     }))
 
-    const availableSubDistricts = address.district && address.province ? 
+    const availableSubDistricts = address.district && address.province ?
       getDistricts(address.province, address.district).map((district: string) => ({
         subDistrict: district,
         value: district.toLowerCase().replace(/\s+/g, '_') + '_sub',
         postalCode: '' // You might want to populate this with actual postal codes
       })) : []
 
-    return { 
-      availableDistricts, 
+    return {
+      availableDistricts,
       availableSubDistricts,
       provinces
     }
   }
 
-  const handleAddressChange = (
-    type: "agent" | "property", 
-    id: string, 
-    field: keyof AddressState, 
-    value: string
-  ) => {
-    const setter = type === "agent" ? setAgentAddresses : setPropertyAddresses
-    const addresses = type === "agent" ? agentAddresses : propertyAddresses
-    
-    setter(prev => prev.map(address => {
-      if (address.id !== id) return address
-      
-      const newAddress = { ...address, [field]: value }
-      
-      // Reset dependent fields when province or district changes
+  const {
+    availableDistricts: agentDistricts,
+    availableSubDistricts: agentSubDistricts,
+    provinces: agentProvinces
+  } = useMemo(
+    () => getAvailableOptions(agentAddress),
+    [agentAddress],
+  )
+
+  const {
+    availableDistricts: propertyDistricts,
+    availableSubDistricts: propertySubDistricts,
+    provinces: propertyProvinces
+  } = useMemo(
+    () => getAvailableOptions(propertyAddress),
+    [propertyAddress],
+  )
+
+  const handleAddressChange = (type: "agent" | "property", field: keyof AddressState, value: string) => {
+    const setter = type === "agent" ? setAgentAddress : setPropertyAddress
+    const currentAddress = type === "agent" ? agentAddress : propertyAddress
+
+    setter((prev) => {
+      const newState = { ...prev, [field]: value }
+
       if (field === "province") {
         newAddress.district = ""
         newAddress.subDistrict = ""
@@ -96,9 +106,10 @@ export default function AddressConfirmationTabs() {
         newAddress.subDistrict = ""
         newAddress.postalCode = ""
       } else if (field === "subDistrict") {
-        const options = getAvailableOptions(newAddress)
-        const selectedSubDistrict = options.availableSubDistricts.find(s => s.value === value)
-        newAddress.postalCode = selectedSubDistrict ? selectedSubDistrict.postalCode : ""
+        const subDistrictData = getAvailableOptions(newState).availableSubDistricts.find(
+          (s) => s.subDistrict === value
+        )
+        newState.postalCode = subDistrictData ? subDistrictData.postalCode : ""
       }
       
       return newAddress
@@ -338,6 +349,7 @@ export default function AddressConfirmationTabs() {
           <TabsTrigger value="property">ที่อยู่ของอสังหาริมทรัพย์</TabsTrigger>
         </TabsList>
 
+        {/* AGENT */}
         <TabsContent value="agent" className="mt-4">
           <div className="space-y-4">
             {agentAddresses.map(address => renderAddressForm(address, "agent"))}
@@ -352,6 +364,7 @@ export default function AddressConfirmationTabs() {
           </div>
         </TabsContent>
 
+        {/* PROPERTY */}
         <TabsContent value="property" className="mt-4">
           <div className="space-y-4">
             {propertyAddresses.map(address => renderAddressForm(address, "property"))}
