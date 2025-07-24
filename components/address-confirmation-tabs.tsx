@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,7 +14,26 @@ import { Check } from "lucide-react"
 import { Edit } from "lucide-react"
 import { Plus } from "lucide-react"
 import { X } from "lucide-react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 
+function YourDialogComponent() {
+  return (
+    <Dialog>
+      <DialogContent>
+        <DialogTitle>หัวข้อของ Dialog</DialogTitle>
+        {/* เนื้อหาอื่นๆ ของคุณ */}
+      </DialogContent>
+    </Dialog>
+  )
+}
 interface AddressState {
   id: string
   fullAddress: string
@@ -28,31 +47,58 @@ interface AddressState {
 export default function AddressConfirmationTabs() {
   const [activeTab, setActiveTab] = useState("agent")
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const supabase = createClientComponentClient()
+  const router = useRouter()
 
-  // Sample initial addresses
-  const [agentAddresses, setAgentAddresses] = useState<AddressState[]>([
-    {
-      id: '',
-      fullAddress: "",
-      province: "",
-      district: "",
-      subDistrict: "",
-      postalCode: "",
-      isDefault: true
-    }
-  ])
+  const [agentAddresses, setAgentAddresses] = useState<AddressState[]>([])
+  const [propertyAddresses, setPropertyAddresses] = useState<AddressState[]>([])
 
-  const [propertyAddresses, setPropertyAddresses] = useState<AddressState[]>([
-    {
-      id: '',
-      fullAddress: "",
-      province: "",
-      district: "",
-      subDistrict: "",
-      postalCode: "",
-      isDefault: true
+  // Load addresses from Supabase
+  useEffect(() => {
+    const loadAddresses = async () => {
+      setLoading(true)
+      try {
+        // Load agent addresses (type_id = 1)
+        const { data: agentData } = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('type_id', 1)
+          .order('is_default', { ascending: false })
+          .order('created_at', { ascending: true })
+
+        // Load property addresses (type_id = 2)
+        const { data: propertyData } = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('type_id', 2)
+          .order('is_default', { ascending: false })
+          .order('created_at', { ascending: true })
+
+        // Transform data to match our AddressState interface
+        const transformAddress = (addr: any): AddressState => ({
+          id: addr.id,
+          fullAddress: addr.full_address,
+          province: addr.province,
+          district: addr.district,
+          subDistrict: addr.sub_district,
+          postalCode: addr.postal_code,
+          isDefault: addr.is_default
+        })
+
+        setAgentAddresses(agentData?.map(transformAddress) || [])
+        setPropertyAddresses(propertyData?.map(transformAddress) || [])
+
+      } catch (error) {
+        console.error("Error loading addresses:", error)
+        toast.error("Failed to load addresses")
+      } finally {
+        setLoading(false)
+      }
     }
-  ])
+
+    loadAddresses()
+  }, [supabase, router])
 
   const getAvailableOptions = (address: Partial<AddressState>) => {
     const provinces = getProvinces()
@@ -67,7 +113,7 @@ export default function AddressConfirmationTabs() {
       getDistricts(address.province, address.district).map((district: string) => ({
         subDistrict: district,
         value: district.toLowerCase().replace(/\s+/g, '_') + '_sub',
-        postalCode: '' // You might want to populate this with actual postal codes
+        postalCode: getZipcode(address.province, address.district, district) || ''
       })) : []
 
     return {
@@ -77,24 +123,6 @@ export default function AddressConfirmationTabs() {
     }
   }
 
-  const {
-    availableDistricts: agentDistricts,
-    availableSubDistricts: agentSubDistricts,
-    provinces: agentProvinces
-  } = useMemo(
-    () => getAvailableOptions(agentAddresses[0]),
-    [agentAddresses],
-  )
-
-  const {
-    availableDistricts: propertyDistricts,
-    availableSubDistricts: propertySubDistricts,
-    provinces: propertyProvinces
-  } = useMemo(
-    () => getAvailableOptions(propertyAddresses[0]),
-    [propertyAddresses],
-  )
-
   const handleAddressChange = (
     type: "agent" | "property",
     id: string,
@@ -102,7 +130,6 @@ export default function AddressConfirmationTabs() {
     value: string
   ) => {
     const setter = type === "agent" ? setAgentAddresses : setPropertyAddresses
-    const currentList = type === "agent" ? agentAddresses : propertyAddresses
   
     setter(prev =>
       prev.map(addr => {
@@ -131,7 +158,7 @@ export default function AddressConfirmationTabs() {
   
   const handleAddAddress = (type: "agent" | "property") => {
     const newAddress: AddressState = {
-      id: Date.now().toString(),
+      id: `temp-${Date.now()}`,
       fullAddress: "",
       province: "",
       district: "",
@@ -152,41 +179,164 @@ export default function AddressConfirmationTabs() {
     setEditingId(id)
   }
 
-  const handleSaveAddress = (type: "agent" | "property", id: string) => {
-    setEditingId(null)
-    // Here you would typically save to your backend
-    window.alert(`บันทึกที่อยู่${type === "agent" ? "ของผู้ยืนยันตัวตน" : "ของอสังหาริมทรัพย์"}สำเร็จ!`)
+  const handleSaveAddress = async (type: "agent" | "property", id: string) => {
+    setLoading(true);
+    try {
+      // ตรวจสอบการล็อกอินและดึงข้อมูลผู้ใช้
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error('กรุณาล็อกอินก่อนบันทึกที่อยู่');
+      }
+  
+      const addresses = type === "agent" ? agentAddresses : propertyAddresses;
+      const addressToSave = addresses.find(addr => addr.id === id);
+      
+      if (!addressToSave) {
+        throw new Error('ไม่พบที่อยู่ที่จะบันทึก');
+      }
+  
+      const typeId = type === "agent" ? 1 : 2;
+      const addressData = {
+        type_id: typeId,
+        full_address: addressToSave.fullAddress,
+        province: addressToSave.province,
+        district: addressToSave.district,
+        sub_district: addressToSave.subDistrict,
+        postal_code: addressToSave.postalCode,
+        is_default: addressToSave.isDefault || false,
+        user_id: user.id // ต้องระบุ user_id
+      };
+  
+      let result;
+      if (id.startsWith('temp-')) {
+        // เพิ่มที่อยู่ใหม่
+        const { data, error } = await supabase
+          .from('addresses')
+          .insert(addressData)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        result = data;
+      } else {
+        // อัปเดตที่อยู่ที่มีอยู่
+        const { data, error } = await supabase
+          .from('addresses')
+          .update(addressData)
+          .eq('id', id)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        result = data;
+      }
+  
+      // อัปเดตสถานะ local
+      const updatedAddress = {
+        id: result.id,
+        fullAddress: result.full_address,
+        province: result.province,
+        district: result.district,
+        subDistrict: result.sub_district,
+        postalCode: result.postal_code,
+        isDefault: result.is_default
+      };
+  
+      // ... อัปเดต state ตามปกติ
+  
+    } catch (error) {
+      console.error("Error saving address:", error);
+      toast.error(error.message || 'เกิดข้อผิดพลาดในการบันทึกที่อยู่');
+    } finally {
+      setLoading(false);
+    }
   }
-
   const handleCancelEdit = () => {
     setEditingId(null)
+    
+    // Remove temporary addresses if canceling creation
+    setAgentAddresses(prev => prev.filter(addr => !addr.id.startsWith('temp-')))
+    setPropertyAddresses(prev => prev.filter(addr => !addr.id.startsWith('temp-')))
   }
 
-  const handleDeleteAddress = (type: "agent" | "property", id: string) => {
-    if (window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?")) {
+  const handleDeleteAddress = async (type: "agent" | "property", id: string) => {
+    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบที่อยู่นี้?")) return
+    
+    setLoading(true)
+    try {
+      if (!id.startsWith('temp-')) {
+        // Only delete from Supabase if it's not a temporary address
+        const { error } = await supabase
+          .from('addresses')
+          .delete()
+          .eq('id', id)
+        
+        if (error) throw error
+      }
+
+      // Update local state
       if (type === "agent") {
         setAgentAddresses(prev => prev.filter(addr => addr.id !== id))
       } else {
         setPropertyAddresses(prev => prev.filter(addr => addr.id !== id))
       }
+
+      toast.success("Address deleted successfully")
+      router.refresh()
+    } catch (error) {
+      console.error("Error deleting address:", error)
+      toast.error("Failed to delete address")
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleSetDefault = (type: "agent" | "property", id: string) => {
-    if (type === "agent") {
-      setAgentAddresses(prev =>
-        prev.map(addr => ({
-          ...addr,
-          isDefault: addr.id === id
-        }))
-      )
-    } else {
-      setPropertyAddresses(prev =>
-        prev.map(addr => ({
-          ...addr,
-          isDefault: addr.id === id
-        }))
-      )
+  const handleSetDefault = async (type: "agent" | "property", id: string) => {
+    setLoading(true)
+    try {
+      const typeId = type === "agent" ? 1 : 2
+      
+      // First, set all addresses of this type to not default
+      const { error: resetError } = await supabase
+        .from('addresses')
+        .update({ is_default: false })
+        .eq('type_id', typeId)
+      
+      if (resetError) throw resetError
+
+      // Then set the selected address to default
+      const { error: setError } = await supabase
+        .from('addresses')
+        .update({ is_default: true })
+        .eq('id', id)
+      
+      if (setError) throw setError
+
+      // Update local state
+      if (type === "agent") {
+        setAgentAddresses(prev =>
+          prev.map(addr => ({
+            ...addr,
+            isDefault: addr.id === id
+          }))
+        )
+      } else {
+        setPropertyAddresses(prev =>
+          prev.map(addr => ({
+            ...addr,
+            isDefault: addr.id === id
+          }))
+        )
+      }
+
+      toast.success("Default address updated")
+      router.refresh()
+    } catch (error) {
+      console.error("Error setting default address:", error)
+      toast.error("Failed to update default address")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -216,7 +366,7 @@ export default function AddressConfirmationTabs() {
                 value={address.fullAddress}
                 onChange={(e) => handleAddressChange(type, address.id, "fullAddress", e.target.value)}
                 className="min-h-[100px]"
-                disabled={!isEditing}
+                disabled={!isEditing || loading}
               />
             </div>
 
@@ -226,7 +376,7 @@ export default function AddressConfirmationTabs() {
                 <Select
                   value={address.province}
                   onValueChange={(value) => handleAddressChange(type, address.id, "province", value)}
-                  disabled={!isEditing}
+                  disabled={!isEditing || loading}
                 >
                   <SelectTrigger id={`${type}-${address.id}-province`}>
                     <SelectValue placeholder="เลือกจังหวัด" />
@@ -246,7 +396,7 @@ export default function AddressConfirmationTabs() {
                 <Select
                   value={address.district}
                   onValueChange={(value) => handleAddressChange(type, address.id, "district", value)}
-                  disabled={!isEditing || !address.province}
+                  disabled={!isEditing || !address.province || loading}
                 >
                   <SelectTrigger id={`${type}-${address.id}-district`}>
                     <SelectValue placeholder="เลือกอำเภอ/เขต" />
@@ -264,13 +414,12 @@ export default function AddressConfirmationTabs() {
               <div className="grid gap-2">
                 <Label htmlFor={`${type}-${address.id}-sub-district`}>ตำบล/แขวง</Label>
                 <Input
-  value={address.subDistrict}
-  onChange={(e) => handleAddressChange(type, address.id, "subDistrict", e.target.value)}
-  disabled={!isEditing || !address.district}
-  placeholder="เลือกตำบล/แขวง"
-  id={`${type}-${address.id}-sub-district`}
-/>
-
+                  value={address.subDistrict}
+                  onChange={(e) => handleAddressChange(type, address.id, "subDistrict", e.target.value)}
+                  disabled={!isEditing || !address.district || loading}
+                  placeholder="เลือกตำบล/แขวง"
+                  id={`${type}-${address.id}-sub-district`}
+                />
               </div>
             </div>
 
@@ -281,7 +430,7 @@ export default function AddressConfirmationTabs() {
                 placeholder="เลขไปรษณีย์"
                 value={address.postalCode}
                 onChange={(e) => handleAddressChange(type, address.id, "postalCode", e.target.value)}
-                disabled={!isEditing}
+                disabled={!isEditing || loading}
               />
             </div>
 
@@ -291,7 +440,7 @@ export default function AddressConfirmationTabs() {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSetDefault(type, address.id)}
-                  disabled={isEditing}
+                  disabled={isEditing || loading}
                 >
                   ตั้งเป็นที่อยู่หลัก
                 </Button>
@@ -304,14 +453,22 @@ export default function AddressConfirmationTabs() {
                       variant="outline"
                       size="sm"
                       onClick={handleCancelEdit}
+                      disabled={loading}
                     >
                       <X className="w-4 h-4 mr-1" /> ยกเลิก
                     </Button>
                     <Button
                       size="sm"
                       onClick={() => handleSaveAddress(type, address.id)}
+                      disabled={loading}
                     >
-                      <Check className="w-4 h-4 mr-1" /> บันทึก
+                      {loading ? (
+                        "กำลังบันทึก..."
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 mr-1" /> บันทึก
+                        </>
+                      )}
                     </Button>
                   </>
                 ) : (
@@ -320,6 +477,7 @@ export default function AddressConfirmationTabs() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditAddress(address.id)}
+                      disabled={loading}
                     >
                       <Edit className="w-4 h-4 mr-1" /> แก้ไข
                     </Button>
@@ -328,6 +486,7 @@ export default function AddressConfirmationTabs() {
                       size="sm"
                       className="text-red-600 hover:text-red-700"
                       onClick={() => handleDeleteAddress(type, address.id)}
+                      disabled={loading}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -338,6 +497,14 @@ export default function AddressConfirmationTabs() {
           </div>
         </CardContent>
       </Card>
+    )
+  }
+
+  if (loading && !editingId) {
+    return (
+      <div className="w-full flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
     )
   }
 
@@ -357,12 +524,21 @@ export default function AddressConfirmationTabs() {
         {/* AGENT */}
         <TabsContent value="agent" className="mt-4">
           <div className="space-y-4">
-            {agentAddresses.map(address => renderAddressForm(address, "agent"))}
+            {agentAddresses.length > 0 ? (
+              agentAddresses.map(address => renderAddressForm(address, "agent"))
+            ) : (
+              <Card>
+                <CardContent className="pt-6 text-center text-gray-500">
+                  ไม่พบที่อยู่ของผู้ยืนยันตัวตน
+                </CardContent>
+              </Card>
+            )}
 
             <Button
               variant="outline"
               className="w-full"
               onClick={() => handleAddAddress("agent")}
+              disabled={loading}
             >
               <Plus className="w-4 h-4 mr-2" /> เพิ่มที่อยู่ใหม่
             </Button>
@@ -372,12 +548,21 @@ export default function AddressConfirmationTabs() {
         {/* PROPERTY */}
         <TabsContent value="property" className="mt-4">
           <div className="space-y-4">
-            {propertyAddresses.map(address => renderAddressForm(address, "property"))}
+            {propertyAddresses.length > 0 ? (
+              propertyAddresses.map(address => renderAddressForm(address, "property"))
+            ) : (
+              <Card>
+                <CardContent className="pt-6 text-center text-gray-500">
+                  ไม่พบที่อยู่ของอสังหาริมทรัพย์
+                </CardContent>
+              </Card>
+            )}
 
             <Button
               variant="outline"
               className="w-full"
               onClick={() => handleAddAddress("property")}
+              disabled={loading}
             >
               <Plus className="w-4 h-4 mr-2" /> เพิ่มที่อยู่ใหม่
             </Button>
