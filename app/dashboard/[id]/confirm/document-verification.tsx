@@ -77,7 +77,7 @@ export default function DocumentVerification() {
                         className="flex h-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 transition-colors hover:bg-gray-100"
                       >
                         <Upload className="h-8 w-8 text-gray-400" />
-                        <span className="mt-2 text-sm text-gray-500">คลิกเพื่ือเลือกไฟล์</span>
+                        <span className="mt-2 text-sm text-gray-500">คลิกเพื่อเลือกไฟล์</span>
                         <span className="text-xs text-gray-400">PNG, JPG, JPEG (สูงสุด 10MB)</span>
                       </Label>
                     </div>
