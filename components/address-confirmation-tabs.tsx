@@ -2,13 +2,13 @@
 
 import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { getProvinces, getAmphoes, getDistricts, getZipcode } from "@/data/thai-address-data"
+import { getProvinces, getAmphoes, getDistricts, getZipcode } from "@/data/provinces"
 import { Trash2 } from "lucide-react"
 
 interface AddressState {
@@ -41,39 +41,39 @@ export default function AddressConfirmationTabs() {
   const getAvailableOptions = (address: AddressState) => {
     const provinces = getProvinces()
     const availableAmphoes = address.province ? getAmphoes(address.province) : []
-    
+
     const availableDistricts = availableAmphoes.map((amphoe: string) => ({
       district: amphoe,
       value: amphoe.toLowerCase().replace(/\s+/g, '_')
     }))
 
-    const availableSubDistricts = address.district && address.province ? 
+    const availableSubDistricts = address.district && address.province ?
       getDistricts(address.province, address.district).map((district: string) => ({
         subDistrict: district,
         value: district.toLowerCase().replace(/\s+/g, '_') + '_sub',
         postalCode: getZipcode(address.province, address.district, district) || ''
       })) : []
 
-    return { 
-      availableDistricts, 
+    return {
+      availableDistricts,
       availableSubDistricts,
       provinces
     }
   }
 
-  const { 
-    availableDistricts: agentDistricts, 
+  const {
+    availableDistricts: agentDistricts,
     availableSubDistricts: agentSubDistricts,
-    provinces: agentProvinces 
+    provinces: agentProvinces
   } = useMemo(
     () => getAvailableOptions(agentAddress),
     [agentAddress],
   )
 
-  const { 
-    availableDistricts: propertyDistricts, 
+  const {
+    availableDistricts: propertyDistricts,
     availableSubDistricts: propertySubDistricts,
-    provinces: propertyProvinces 
+    provinces: propertyProvinces
   } = useMemo(
     () => getAvailableOptions(propertyAddress),
     [propertyAddress],
@@ -94,8 +94,10 @@ export default function AddressConfirmationTabs() {
         newState.subDistrict = ""
         newState.postalCode = ""
       } else if (field === "subDistrict") {
-        const selectedSubDistrict = getAvailableOptions(newState).availableSubDistricts.find((s) => s.value === value)
-        newState.postalCode = selectedSubDistrict ? selectedSubDistrict.postalCode : ""
+        const subDistrictData = getAvailableOptions(newState).availableSubDistricts.find(
+          (s) => s.subDistrict === value
+        )
+        newState.postalCode = subDistrictData ? subDistrictData.postalCode : ""
       }
       return newState
     })
@@ -122,16 +124,14 @@ export default function AddressConfirmationTabs() {
   }
 
   const handleSaveAddress = (type: "agent" | "property") => {
-    // ตัวอย่างการแสดง alert
     window.alert(`บันทึกที่อยู่${type === "agent" ? "ของผู้ยืนยันตัวตน" : "ของอสังหาริมทรัพย์"}สำเร็จ!`);
-    // ต่อไปสามารถเพิ่ม logic การบันทึกข้อมูล (เช่น เรียก API) ได้ที่นี่
   }
 
   return (
     <div className="w-full space-y-6">
       <div>
-      <h1 className="text-2xl md:text-2xl font-bold text-gray-900">ยืนยันที่อยู่</h1>
-      <p className="text-gray-600">กรุณากรอกข้อมูลที่อยู่ปัจจุบันของคุณให้ครบถ้วน เพื่อใช้ในการยืนยันตัวตน</p>
+        <h1 className="text-2xl font-bold text-gray-900">ยืนยันที่อยู่</h1>
+        <p className="text-gray-600">กรุณากรอกข้อมูลที่อยู่ปัจจุบันของคุณให้ครบถ้วน เพื่อใช้ในการยืนยันตัวตน</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
@@ -140,6 +140,7 @@ export default function AddressConfirmationTabs() {
           <TabsTrigger value="property">ที่อยู่ของอสังหาริมทรัพย์</TabsTrigger>
         </TabsList>
 
+        {/* AGENT */}
         <TabsContent value="agent" className="mt-4">
           <Card>
             <CardContent className="pt-6">
@@ -154,6 +155,7 @@ export default function AddressConfirmationTabs() {
                     className="min-h-[100px]"
                   />
                 </div>
+
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="grid gap-2">
                     <Label htmlFor="agent-province">จังหวัด</Label>
@@ -173,6 +175,7 @@ export default function AddressConfirmationTabs() {
                       </SelectContent>
                     </Select>
                   </div>
+
                   <div className="grid gap-2">
                     <Label htmlFor="agent-district">อำเภอ/เขต</Label>
                     <Select
@@ -185,37 +188,31 @@ export default function AddressConfirmationTabs() {
                       </SelectTrigger>
                       <SelectContent>
                         {agentDistricts.map((district) => (
-                          <SelectItem key={district.value} value={district.value}>
+                          <SelectItem key={district.value} value={district.district}>
                             {district.district}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
+
                   <div className="grid gap-2">
                     <Label htmlFor="agent-sub-district">ตำบล/แขวง</Label>
-                    <Select
+                    <Input
+                      id="agent-sub-district"
+                      placeholder="กรอกตำบล/แขวง"
                       value={agentAddress.subDistrict}
-                      onValueChange={(value) => handleAddressChange("agent", "subDistrict", value)}
+                      onChange={(e) => handleAddressChange("agent", "subDistrict", e.target.value)}
                       disabled={!agentAddress.district}
-                    >
-                      <SelectTrigger id="agent-sub-district">
-                        <SelectValue placeholder="เลือกตำบล/แขวง" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {agentSubDistricts.map((subDistrict) => (
-                          <SelectItem key={subDistrict.value} value={subDistrict.value}>
-                            {subDistrict.subDistrict}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    />
                   </div>
                 </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="agent-postal-code">เลขไปรษณีย์</Label>
                   <Input id="agent-postal-code" placeholder="เลขไปรษณีย์" value={agentAddress.postalCode} readOnly />
                 </div>
+
                 <div className="flex justify-end gap-2">
                   <Button className="bg-yellow-500 text-white">แก้ไขข้อมูล</Button>
                   <Button className="bg-blue-500 text-white">เพิ่มที่อยู่</Button>
@@ -228,6 +225,7 @@ export default function AddressConfirmationTabs() {
                     <Trash2 className="w-5 h-5" />
                   </Button>
                 </div>
+
                 <Button className="w-full mt-1" onClick={() => handleSaveAddress("agent")}>
                   บันทึกที่อยู่ของผู้ยืนยันตัวตน
                 </Button>
@@ -236,6 +234,7 @@ export default function AddressConfirmationTabs() {
           </Card>
         </TabsContent>
 
+        {/* PROPERTY */}
         <TabsContent value="property" className="mt-4">
           <Card>
             <CardContent className="pt-6">
@@ -250,6 +249,7 @@ export default function AddressConfirmationTabs() {
                     className="min-h-[100px]"
                   />
                 </div>
+
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="grid gap-2">
                     <Label htmlFor="property-province">จังหวัด</Label>
@@ -269,6 +269,7 @@ export default function AddressConfirmationTabs() {
                       </SelectContent>
                     </Select>
                   </div>
+
                   <div className="grid gap-2">
                     <Label htmlFor="property-district">อำเภอ/เขต</Label>
                     <Select
@@ -281,33 +282,26 @@ export default function AddressConfirmationTabs() {
                       </SelectTrigger>
                       <SelectContent>
                         {propertyDistricts.map((district) => (
-                          <SelectItem key={district.value} value={district.value}>
+                          <SelectItem key={district.value} value={district.district}>
                             {district.district}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
+
                   <div className="grid gap-2">
                     <Label htmlFor="property-sub-district">ตำบล/แขวง</Label>
-                    <Select
+                    <Input
+                      id="property-sub-district"
+                      placeholder="กรอกตำบล/แขวง"
                       value={propertyAddress.subDistrict}
-                      onValueChange={(value) => handleAddressChange("property", "subDistrict", value)}
+                      onChange={(e) => handleAddressChange("property", "subDistrict", e.target.value)}
                       disabled={!propertyAddress.district}
-                    >
-                      <SelectTrigger id="property-sub-district">
-                        <SelectValue placeholder="เลือกตำบล/แขวง" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {propertySubDistricts.map((subDistrict) => (
-                          <SelectItem key={subDistrict.value} value={subDistrict.value}>
-                            {subDistrict.subDistrict}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    />
                   </div>
                 </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="property-postal-code">เลขไปรษณีย์</Label>
                   <Input
@@ -317,6 +311,7 @@ export default function AddressConfirmationTabs() {
                     readOnly
                   />
                 </div>
+
                 <div className="flex justify-end gap-2">
                   <Button className="bg-yellow-500 text-white">แก้ไขข้อมูล</Button>
                   <Button className="bg-blue-500 text-white">เพิ่มที่อยู่</Button>
@@ -329,6 +324,7 @@ export default function AddressConfirmationTabs() {
                     <Trash2 className="w-5 h-5" />
                   </Button>
                 </div>
+
                 <Button className="w-full mt-1" onClick={() => handleSaveAddress("property")}>
                   บันทึกที่อยู่ของอสังหาริมทรัพย์
                 </Button>
