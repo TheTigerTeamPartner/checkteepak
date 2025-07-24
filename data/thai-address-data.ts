@@ -1,72 +1,57 @@
-// This is a simplified implementation that matches the structure of thai-address-database
-// In a real implementation, you would import from 'thai-address-database'
-
 interface AddressEntry {
   district: string
   amphoe: string
   province: string
-  zipcode: string
 }
 
-// This is a simplified version of the database
 const addressDatabase: AddressEntry[] = [
-  // Bangkok
-  { district: 'จตุจักร', amphoe: 'จตุจักร', province: 'กรุงเทพมหานคร', zipcode: '10900' },
-  { district: 'ลาดยาว', amphoe: 'จตุจักร', province: 'กรุงเทพมหานคร', zipcode: '10900' },
-  { district: 'เสนานิคม', amphoe: 'จตุจักร', province: 'กรุงเทพมหานคร', zipcode: '10900' },
-  { district: 'คลองเตยเหนือ', amphoe: 'วัฒนา', province: 'กรุงเทพมหานคร', zipcode: '10110' },
-  { district: 'คลองตันเหนือ', amphoe: 'วัฒนา', province: 'กรุงเทพมหานคร', zipcode: '10110' },
-  { district: 'พระโขนงเหนือ', amphoe: 'วัฒนา', province: 'กรุงเทพมหานคร', zipcode: '10110' },
-  { district: 'สีลม', amphoe: 'บางรัก', province: 'กรุงเทพมหานคร', zipcode: '10500' },
-  { district: 'สุริยวงศ์', amphoe: 'บางรัก', province: 'กรุงเทพมหานคร', zipcode: '10500' },
-  { district: 'บางรัก', amphoe: 'บางรัก', province: 'กรุงเทพมหานคร', zipcode: '10500' },
-  
-  // Chiang Mai
-  { district: 'ศรีภูมิ', amphoe: 'เมืองเชียงใหม่', province: 'เชียงใหม่', zipcode: '50200' },
-  { district: 'ช้างเผือก', amphoe: 'เมืองเชียงใหม่', province: 'เชียงใหม่', zipcode: '50300' },
-  { district: 'สุเทพ', amphoe: 'เมืองเชียงใหม่', province: 'เชียงใหม่', zipcode: '50200' },
-  { district: 'สันกำแพง', amphoe: 'สันกำแพง', province: 'เชียงใหม่', zipcode: '50130' },
-  { district: 'ทรายมูล', amphoe: 'สันกำแพง', province: 'เชียงใหม่', zipcode: '50130' },
-  
-  // Phuket
-  { district: 'ตลาดใหญ่', amphoe: 'เมืองภูเก็ต', province: 'ภูเก็ต', zipcode: '83000' },
-  { district: 'ตลาดเหนือ', amphoe: 'เมืองภูเก็ต', province: 'ภูเก็ต', zipcode: '83000' },
-  { district: 'กะทู้', amphoe: 'กะทู้', province: 'ภูเก็ต', zipcode: '83120' },
-  { district: 'ป่าตอง', amphoe: 'กะทู้', province: 'ภูเก็ต', zipcode: '83150' },
-  
-  // Chonburi
-  { district: 'บางปลาสร้อย', amphoe: 'เมืองชลบุรี', province: 'ชลบุรี', zipcode: '20000' },
-  { district: 'มะขามหย่ง', amphoe: 'เมืองชลบุรี', province: 'ชลบุรี', zipcode: '20000' },
-  { district: 'ศรีราชา', amphoe: 'ศรีราชา', province: 'ชลบุรี', zipcode: '20110' },
-  { district: 'สุรศักดิ์', amphoe: 'ศรีราชา', province: 'ชลบุรี', zipcode: '20110' },
-  
-  // Songkhla
-  { district: 'บ่อยาง', amphoe: 'เมืองสงขลา', province: 'สงขลา', zipcode: '90000' },
-  { district: 'เขารูปช้าง', amphoe: 'เมืองสงขลา', province: 'สงขลา', zipcode: '90000' },
-  { district: 'หาดใหญ่', amphoe: 'หาดใหญ่', province: 'สงขลา', zipcode: '90110' },
-  { district: 'คอหงส์', amphoe: 'หาดใหญ่', province: 'สงขลา', zipcode: '90110' },
-  
-  // Surat Thani
-  { district: 'ตลาด', amphoe: 'เมืองสุราษฎร์ธานี', province: 'สุราษฎร์ธานี', zipcode: '84000' },
-  
-  // Khon Kaen
-  { district: 'ในเมือง', amphoe: 'เมืองขอนแก่น', province: 'ขอนแก่น', zipcode: '40000' },
-  { district: 'ศิลา', amphoe: 'เมืองขอนแก่น', province: 'ขอนแก่น', zipcode: '40000' },
-  
-  // Nakhon Ratchasima
-  { district: 'ในเมือง', amphoe: 'เมืองนครราชสีมา', province: 'นครราชสีมา', zipcode: '30000' },
-  { district: 'หนองไผ่', amphoe: 'เมืองนครราชสีมา', province: 'นครราชสีมา', zipcode: '30000' }
+  { district: 'จตุจักร', amphoe: 'จตุจักร', province: 'กรุงเทพมหานคร' },
+  { district: 'ลาดยาว', amphoe: 'จตุจักร', province: 'กรุงเทพมหานคร' },
+  { district: 'เสนานิคม', amphoe: 'จตุจักร', province: 'กรุงเทพมหานคร' },
+  { district: 'คลองเตยเหนือ', amphoe: 'วัฒนา', province: 'กรุงเทพมหานคร' },
+  { district: 'คลองตันเหนือ', amphoe: 'วัฒนา', province: 'กรุงเทพมหานคร' },
+  { district: 'พระโขนงเหนือ', amphoe: 'วัฒนา', province: 'กรุงเทพมหานคร' },
+  { district: 'สีลม', amphoe: 'บางรัก', province: 'กรุงเทพมหานคร' },
+  { district: 'สุริยวงศ์', amphoe: 'บางรัก', province: 'กรุงเทพมหานคร' },
+  { district: 'บางรัก', amphoe: 'บางรัก', province: 'กรุงเทพมหานคร' },
+
+  { district: 'ศรีภูมิ', amphoe: 'เมืองเชียงใหม่', province: 'เชียงใหม่' },
+  { district: 'ช้างเผือก', amphoe: 'เมืองเชียงใหม่', province: 'เชียงใหม่' },
+  { district: 'สุเทพ', amphoe: 'เมืองเชียงใหม่', province: 'เชียงใหม่' },
+  { district: 'สันกำแพง', amphoe: 'สันกำแพง', province: 'เชียงใหม่' },
+  { district: 'ทรายมูล', amphoe: 'สันกำแพง', province: 'เชียงใหม่' },
+
+  { district: 'ตลาดใหญ่', amphoe: 'เมืองภูเก็ต', province: 'ภูเก็ต' },
+  { district: 'ตลาดเหนือ', amphoe: 'เมืองภูเก็ต', province: 'ภูเก็ต' },
+  { district: 'กะทู้', amphoe: 'กะทู้', province: 'ภูเก็ต' },
+  { district: 'ป่าตอง', amphoe: 'กะทู้', province: 'ภูเก็ต' },
+
+  { district: 'บางปลาสร้อย', amphoe: 'เมืองชลบุรี', province: 'ชลบุรี' },
+  { district: 'มะขามหย่ง', amphoe: 'เมืองชลบุรี', province: 'ชลบุรี' },
+  { district: 'ศรีราชา', amphoe: 'ศรีราชา', province: 'ชลบุรี' },
+  { district: 'สุรศักดิ์', amphoe: 'ศรีราชา', province: 'ชลบุรี' },
+
+  { district: 'บ่อยาง', amphoe: 'เมืองสงขลา', province: 'สงขลา' },
+  { district: 'เขารูปช้าง', amphoe: 'เมืองสงขลา', province: 'สงขลา' },
+  { district: 'หาดใหญ่', amphoe: 'หาดใหญ่', province: 'สงขลา' },
+  { district: 'คอหงส์', amphoe: 'หาดใหญ่', province: 'สงขลา' },
+
+  { district: 'ตลาด', amphoe: 'เมืองสุราษฎร์ธานี', province: 'สุราษฎร์ธานี' },
+
+  { district: 'ในเมือง', amphoe: 'เมืองขอนแก่น', province: 'ขอนแก่น' },
+  { district: 'ศิลา', amphoe: 'เมืองขอนแก่น', province: 'ขอนแก่น' },
+
+  { district: 'ในเมือง', amphoe: 'เมืองนครราชสีมา', province: 'นครราชสีมา' },
+  { district: 'หนองไผ่', amphoe: 'เมืองนครราชสีมา', province: 'นครราชสีมา' }
 ]
 
-// Helper functions to work with the address database
 export const searchAddressByDistrict = (query: string): AddressEntry[] => {
   if (!query) return []
   const lowerQuery = query.toLowerCase()
-  return addressDatabase.filter(entry => 
+  return addressDatabase.filter(entry =>
     entry.district.toLowerCase().includes(lowerQuery) ||
     entry.amphoe.toLowerCase().includes(lowerQuery) ||
-    entry.province.toLowerCase().includes(lowerQuery) ||
-    entry.zipcode.includes(query)
+    entry.province.toLowerCase().includes(lowerQuery)
   )
 }
 
@@ -92,45 +77,34 @@ export const getDistricts = (province: string, amphoe: string): string[] => {
   return Array.from(districts).sort()
 }
 
-export const getZipcode = (province: string, amphoe: string, district: string): string | undefined => {
-  const entry = addressDatabase.find(entry => 
-    entry.province === province && 
-    entry.amphoe === amphoe && 
-    entry.district === district
-  )
-  return entry?.zipcode
-}
+// getZipcode ไม่จำเป็นแล้ว เพราะไม่มี field zipcode แล้ว (ลบทิ้งได้)
 
-// For backward compatibility with the old structure
 export const thaiAddressData = (() => {
   const provinces = getProvinces()
-  
+
   return provinces.map(province => {
     const amphoes = getAmphoes(province)
-    
+
     const districts = amphoes.flatMap(amphoe => {
       const districtNames = getDistricts(province, amphoe)
-      
-      return districtNames.map(district => {
-        const zipcode = getZipcode(province, amphoe, district) || ''
-        return {
-          district: amphoe, // Using amphoe as district for backward compatibility
-          value: amphoe.toLowerCase().replace(/\s+/g, '_'),
-          subDistricts: [
-            {
-              subDistrict: district,
-              value: district.toLowerCase().replace(/\s+/g, '_') + '_sub',
-              postalCode: zipcode
-            }
-          ]
-        }
-      })
+
+      return districtNames.map(district => ({
+        district: district,                     // แก้จาก amphoe เป็น district จริง ๆ
+        value: district.toLowerCase().replace(/\s+/g, '_'),  // เปลี่ยนตามชื่อตำบล
+        subDistricts: [
+          {
+            subDistrict: district,
+            value: district.toLowerCase().replace(/\s+/g, '_') + '_sub',
+            postalCode: '' // ปล่อยให้กรอกเอง ไม่มีการเติมรหัสไปรษณีย์อัตโนมัติ
+          }
+        ]
+      }))
     })
-    
+
     return {
       province,
       value: province.toLowerCase().replace(/\s+/g, ''),
-      districts: districts
+      districts
     }
   })
 })()

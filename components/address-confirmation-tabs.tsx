@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { getProvinces, getAmphoes, getDistricts, getZipcode } from "@/data/thai-address-data"
+import { getProvinces, getAmphoes, getDistricts,  } from "@/data/thai-address-data"
 import { Trash2 } from "lucide-react"
 
 interface AddressState {
@@ -51,7 +51,7 @@ export default function AddressConfirmationTabs() {
       getDistricts(address.province, address.district).map((district: string) => ({
         subDistrict: district,
         value: district.toLowerCase().replace(/\s+/g, '_') + '_sub',
-        postalCode: getZipcode(address.province, address.district, district) || ''
+        postalCode: ''
       })) : []
 
     return { 
@@ -214,7 +214,13 @@ export default function AddressConfirmationTabs() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="agent-postal-code">เลขไปรษณีย์</Label>
-                  <Input id="agent-postal-code" placeholder="เลขไปรษณีย์" value={agentAddress.postalCode} readOnly />
+                  <Input
+  id="agent-postal-code"
+  placeholder="เลขไปรษณีย์"
+  value={agentAddress.postalCode}
+  onChange={(e) => handleAddressChange("agent", "postalCode", e.target.value)}
+/>
+
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button className="bg-yellow-500 text-white">แก้ไขข้อมูล</Button>
