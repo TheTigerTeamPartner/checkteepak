@@ -19,6 +19,7 @@ import {
   Bell,
   Crown,
   FileCheck,
+  MapPin,
 } from "lucide-react";
 import {
   Users,
@@ -139,6 +140,12 @@ export default function Header() {
         href: "/admin/notifications",
         title: "การแจ้งเตือน",
         icon: <Bell className="h-5 w-5" />,
+      },
+
+      {
+        href: "/admin/confirm-address",
+        title: "ยืนยันที่อยู่",
+        icon: <MapPin className="h-5 w-5" />,
       },
     ];
     
