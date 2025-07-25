@@ -132,6 +132,11 @@ export default function Header() {
         icon: <BarChart className="h-5 w-5" />,
       },
       {
+        href: "/admin/confirm-address",
+        title: "ยืนยันที่อยู่",
+        icon: <MapPin className="h-5 w-5" />,
+      },
+      {
         href: "/admin/settings",
         title: "ตั้งค่าระบบ",
         icon: <Settings className="h-5 w-5" />,
@@ -142,11 +147,7 @@ export default function Header() {
         icon: <Bell className="h-5 w-5" />,
       },
 
-      {
-        href: "/admin/confirm-address",
-        title: "ยืนยันที่อยู่",
-        icon: <MapPin className="h-5 w-5" />,
-      },
+
     ];
     
 

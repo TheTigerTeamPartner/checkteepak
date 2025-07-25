@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
   Shield,
   Megaphone,
+  MapPin,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -61,6 +62,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       href: "/admin/document",
       title: "ยืนยันเอกสาร",
       icon: <BarChart className="h-5 w-5" />,
+    },
+    {
+      href: "/admin/confirm-address",
+      title: "ยืนยันที่อยู่",
+      icon: <MapPin className="h-5 w-5" />,
     },
     {
       href: "/admin/settings",
