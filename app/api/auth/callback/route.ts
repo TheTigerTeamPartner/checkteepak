@@ -18,3 +18,30 @@ export async function GET(request: Request) {
   // return the user to an error page with instructions
   return NextResponse.redirect(`${origin}/auth/auth-code-error`);
 }
+
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const token_hash = searchParams.get('token_hash');
+  const type = searchParams.get('type');
+  const next = searchParams.get('next') || '/';
+
+  if (token_hash && type) {
+    const { error } = await supabase.auth.verifyOtp({
+      type,
+      token_hash,
+    });
+
+    if (!error) {
+      return NextResponse.redirect(new URL(next, request.url));
+    }
+  }
+
+  // redirect to error page or home with error message
+  return NextResponse.redirect(new URL('/?error=auth', request.url));
+}

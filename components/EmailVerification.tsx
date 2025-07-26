@@ -1,169 +1,216 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Mail, Plus, CheckCircle, Trash2 } from 'lucide-react';
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { toast } from "@/components/ui/use-toast"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
 
-// Initialize Supabase client with environment variables
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
 interface Email {
-  id: number | string;
+  id: string;
   value: string;
   verified: boolean;
   verificationSent: boolean;
 }
 
 interface EmailVerificationProps {
-  formData: {
-    contact: {
-      emails: Email[];
-    };
-  };
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  emails: Email[];
+  onEmailsChange: (emails: Email[]) => void;
 }
 
-export default function EmailVerification({ formData, setFormData }: EmailVerificationProps) {
+export default function EmailVerification({ emails = [], onEmailsChange }: EmailVerificationProps) {
   const [isSending, setIsSending] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [verifyingEmailId, setVerifyingEmailId] = useState<string | null>(null);
 
-  // Function to send verification email
-  const sendVerificationEmail = async (email: string, index: number) => {
+  // ตรวจสอบ session เมื่อโหลด component
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        const updatedEmails = emails.map(e => ({
+          ...e,
+          verified: e.verified || e.value === user.email
+        }));
+        onEmailsChange(updatedEmails);
+      }
+    };
+
+    checkSession();
+  }, []);
+
+  // ส่งลิงก์ยืนยันอีเมล
+  const sendVerification = async (email: string, id: string) => {
     try {
       setIsSending(true);
-      
-      // Send verification email via Supabase
+      setVerifyingEmailId(id);
+
       const { error } = await supabase.auth.signInWithOtp({
-        email: email,
+        email,
         options: {
-          emailRedirectTo: `${window.location.origin}/login`,
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/api/verify-email`,
         },
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw error;
 
-      // Update email status to show verification link sent
-      const updatedEmails = [...(formData.contact.emails || [])];
-      updatedEmails[index].verificationSent = true;
-      
-      setFormData((prev: any) => ({
-        ...prev,
-        contact: {
-          ...prev.contact,
-          emails: updatedEmails,
-        },
-      }));
+      const updatedEmails = emails.map(e => 
+        e.id === id ? { ...e, verificationSent: true } : e
+      );
+      onEmailsChange(updatedEmails);
 
       toast({
-        title: 'สำเร็จ',
-        description: 'ส่งลิงก์ยืนยันอีเมลเรียบร้อยแล้ว',
-        variant: 'default',
+        title: 'ส่งลิงก์ยืนยันเรียบร้อย',
+        description: 'กรุณาตรวจสอบอีเมลของคุณและคลิกลิงก์ยืนยัน',
       });
     } catch (error: any) {
       toast({
         title: 'เกิดข้อผิดพลาด',
         description: error.message || 'ไม่สามารถส่งลิงก์ยืนยันได้',
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
       setIsSending(false);
     }
   };
 
+  // ยืนยันด้วย OTP
+  const verifyWithOtp = async (email: string) => {
+    try {
+      setIsSending(true);
+      
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'email',
+      });
+
+      if (error) throw error;
+
+      const updatedEmails = emails.map(e => 
+        e.value === email ? { ...e, verified: true } : e
+      );
+      onEmailsChange(updatedEmails);
+      setOtp('');
+      setVerifyingEmailId(null);
+
+      toast({
+        title: 'ยืนยันอีเมลสำเร็จ',
+        description: 'อีเมลของคุณได้รับการยืนยันแล้ว',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'ยืนยันไม่สำเร็จ',
+        description: error.message || 'รหัส OTP ไม่ถูกต้องหรือหมดอายุ',
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // เพิ่มอีเมลใหม่
+  const addEmail = () => {
+    const newEmail: Email = {
+      id: Date.now().toString(),
+      value: '',
+      verified: false,
+      verificationSent: false,
+    };
+    onEmailsChange([...emails, newEmail]);
+  };
+
+  // ลบอีเมล
+  const removeEmail = (id: string) => {
+    onEmailsChange(emails.filter(e => e.id !== id));
+  };
+
+  // อัพเดทอีเมล
+  const updateEmail = (id: string, value: string) => {
+    const updatedEmails = emails.map(e => 
+      e.id === id ? { ...e, value } : e
+    );
+    onEmailsChange(updatedEmails);
+  };
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
         <Label className="text-base font-medium flex items-center gap-2">
           <Mail className="w-4 h-4" />
           อีเมล
         </Label>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setFormData((prev: any) => ({
-              ...prev,
-              contact: {
-                ...prev.contact,
-                emails: [
-                  ...(prev.contact.emails || []), 
-                  { 
-                    value: "", 
-                    verified: false, 
-                    verificationSent: false, 
-                    id: Date.now() 
-                  }
-                ],
-              },
-            }));
-          }}
-        >
+        <Button variant="outline" size="sm" onClick={addEmail}>
           <Plus className="w-4 h-4 mr-1" /> เพิ่มอีเมล
         </Button>
       </div>
 
-      {/* List of emails */}
       <div className="space-y-3">
-        {(formData.contact.emails || []).map((email, index) => (
-          <div key={email.id || index} className="flex items-center gap-2">
-            <Input
-              type="email"
-              value={email.value}
-              onChange={(e) => {
-                const updatedEmails = [...(formData.contact.emails || [])];
-                updatedEmails[index].value = e.target.value;
-                setFormData((prev: any) => ({
-                  ...prev,
-                  contact: {
-                    ...prev.contact,
-                    emails: updatedEmails,
-                  },
-                }));
-              }}
-              placeholder="อีเมล"
-              className="flex-1"
-            />
-            {email.verified ? (
-              <Badge variant="outline" className="text-green-600 border-green-600">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                ยืนยันแล้ว
-              </Badge>
-            ) : (
+        {emails.map((email) => (
+          <div key={email.id} className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Input
+                type="email"
+                value={email.value}
+                onChange={(e) => updateEmail(email.id, e.target.value)}
+                placeholder="กรอกอีเมล"
+                className="flex-1"
+              />
+              
+              {email.verified ? (
+                <Badge variant="outline" className="text-green-600 border-green-600">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  ยืนยันแล้ว
+                </Badge>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isSending || email.verificationSent || !email.value}
+                  onClick={() => sendVerification(email.value, email.id)}
+                >
+                  {email.verificationSent ? 'ส่งแล้ว' : 'ยืนยันอีเมล'}
+                </Button>
+              )}
+
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                disabled={isSending || email.verificationSent}
-                onClick={() => sendVerificationEmail(email.value, index)}
+                className="text-red-600 hover:text-red-700 px-2"
+                onClick={() => removeEmail(email.id)}
               >
-                {email.verificationSent ? 'ลิงก์ถูกส่งแล้ว' : 'ส่งลิงก์ยืนยัน'}
+                <Trash2 className="w-4 h-4" />
               </Button>
+            </div>
+
+            {verifyingEmailId === email.id && email.verificationSent && !email.verified && (
+              <div className="flex items-center gap-2 pl-2">
+                <Input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="กรอกรหัส OTP จากอีเมล"
+                  className="flex-1 max-w-xs"
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  disabled={isSending || !otp}
+                  onClick={() => verifyWithOtp(email.value)}
+                >
+                  ยืนยัน OTP
+                </Button>
+              </div>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-red-600 hover:text-red-700 px-2"
-              onClick={() => {
-                const updatedEmails = (formData.contact.emails || []).filter((_, i) => i !== index);
-                setFormData((prev: any) => ({
-                  ...prev,
-                  contact: {
-                    ...prev.contact,
-                    emails: updatedEmails,
-                  },
-                }));
-              }}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
           </div>
         ))}
       </div>
