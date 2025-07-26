@@ -93,7 +93,7 @@ export function UserNav() {
         ) : (
           <>
             <DropdownMenuItem>
-              <Link href={`/dashboard/${user?.id}`}>
+              <Link href={`/dashboard/${user?.id}/profile`}>
                 <div className="flex items-center gap-2">
                   <UserIcon className="w-4 h-4" />
                   Dashboard
