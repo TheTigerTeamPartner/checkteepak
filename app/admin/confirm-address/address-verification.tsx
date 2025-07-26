@@ -1,86 +1,74 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { MapPin, Clock, CheckCircle, XCircle, Eye, Edit, Trash2, Plus, Building } from "lucide-react"
+import { Label } from "@/components/ui/label"
 
-
-// Mock data for pending verifications
-const pendingVerifications = [
-  {
-    id: "AV001",
-    user: {
-      name: "สมชาย ใจดี",
-      email: "somchai@email.com",
-      phone: "081-234-5678",
-    },
-    applicantAddress: {
-      isMainAddress: true,
-      houseNumber: "445 ม.6",
-      province: "นครราชสีมา",
-      district: "เมืองนครราชสีมา",
-      subDistrict: "หัวทะเล",
-      postalCode: "30000",
-      type: "individual",
-      verificationStatus: "verified", // Added status
-    },
-    realEstateAddress: {
-      houseNumber: "254 ม.5",
-      province: "นครราชสีมา",
-      district: "เมืองนครราชสีมา",
-      subDistrict: "หัวทะเล",
-      postalCode: "30000",
-      setAsMain: false,
-      type: "real_estate",
-      verificationStatus: "pending", // Added status
-    },
-    submittedAt: "2024-01-15 14:30",
-    status: "pending",
-    priority: "normal",
-  },
-  {
-    id: "AV002",
-    user: {
-      name: "สมหญิง รักดี",
-      email: "somying@email.com",
-      phone: "082-345-6789",
-    },
-    applicantAddress: {
-      isMainAddress: false,
-      houseNumber: "123/45",
-      province: "กรุงเทพมหานร",
-      district: "คลองเตย",
-      subDistrict: "คลองเตย",
-      postalCode: "10110",
-      type: "individual",
-      verificationStatus: "pending", // Added status
-    },
-    realEstateAddress: {
-      houseNumber: "789/12",
-      province: "กรุงเทพมหานคร",
-      district: "บางรัก",
-      subDistrict: "สีลม",
-      postalCode: "10500",
-      setAsMain: true,
-      type: "real_estate",
-      verificationStatus: "verified", // Added status
-    },
-    submittedAt: "2024-01-15 16:45",
-    status: "pending",
-    priority: "high",
-  },
-]
+import {
+  MapPin, Clock, CheckCircle, XCircle, Eye, Edit, Trash2, Plus, Building
+} from "lucide-react"
 
 export default function Component() {
   const [selectedVerification, setSelectedVerification] = useState<string | null>(null)
   const [adminComment, setAdminComment] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
-  const [activeTab, setActiveTab] = useState("applicant") // New state for active tab
+  const [activeTab, setActiveTab] = useState("applicant")
+  const [pendingVerifications, setPendingVerifications] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data, error } = await supabase
+        .from("addresses")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("Fetch error:", error)
+        return
+      }
+
+      const formatted = data.map((row) => ({
+        id: row.id,
+        user: {
+          name: row.agent_name || "ไม่ทราบชื่อ",
+          email: row.agent_email || "-",
+          phone: row.agent_phone || "-",
+        },
+        applicantAddress: {
+          isMainAddress: row.is_default,
+          houseNumber: row.full_address,
+          province: row.province,
+          district: row.district,
+          subDistrict: row.sub_district,
+          postalCode: row.postal_code,
+          type: row.type_id === 1 ? "individual" : "real_estate",
+          verificationStatus: row.status || "pending",
+        },
+        realEstateAddress: {
+          houseNumber: row.full_address,
+          province: row.province,
+          district: row.district,
+          subDistrict: row.sub_district,
+          postalCode: row.postal_code,
+          setAsMain: row.is_default,
+          type: row.type_id === 2 ? "real_estate" : "individual",
+          verificationStatus: row.status || "pending",
+        },
+        submittedAt: row.created_at,
+        status: row.status || "pending",
+        priority: "normal",
+      }))
+
+      setPendingVerifications(formatted)
+    }
+
+    fetchData()
+  }, [])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -151,18 +139,33 @@ export default function Component() {
     }
   }
 
-  const handleApprove = (id: string) => {
-    console.log("Approved:", id)
-    // Handle approval logic
+  const handleApprove = async (id: string) => {
+    await supabase
+      .from("addresses")
+      .update({ status: "approved" })
+      .eq("id", id)
+    setPendingVerifications((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, status: "approved" } : v))
+    )
   }
 
-  const handleReject = (id: string) => {
-    console.log("Rejected:", id, "Comment:", adminComment)
-    // Handle rejection logic
+  const handleReject = async (id: string) => {
+    await supabase
+      .from("addresses")
+      .update({ status: "rejected", admin_comment: adminComment })
+      .eq("id", id)
+    setPendingVerifications((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, status: "rejected" } : v))
+    )
   }
+
+  const filtered = pendingVerifications.filter((v) => {
+    if (filterStatus === "all") return true
+    return v.status === filterStatus
+  })
 
   const selectedData = pendingVerifications.find((v) => v.id === selectedVerification)
-
+  
   return (
     <div className="flex min-h-screen bg-gray-50">
       
