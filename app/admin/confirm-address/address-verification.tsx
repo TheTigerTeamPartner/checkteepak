@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { MapPin, Clock, CheckCircle, XCircle, Eye, Edit, Trash2, Plus, Building } from "lucide-react"
+import {  Clock, CheckCircle, XCircle, Eye, Edit, Trash2, Plus, Building } from "lucide-react"
 
 
 // Mock data for pending verifications
@@ -110,18 +110,7 @@ export default function Component() {
     }
   }
 
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return <Badge variant="destructive">ด่วน</Badge>
-      case "normal":
-        return <Badge variant="secondary">ปกติ</Badge>
-      case "low":
-        return <Badge variant="outline">ไม่ด่วน</Badge>
-      default:
-        return <Badge variant="outline">ปกติ</Badge>
-    }
-  }
+  
 
   const getAddressVerificationStatusBadge = (status: string) => {
     switch (status) {
@@ -173,7 +162,7 @@ export default function Component() {
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-2">
               <div className="bg-red-100 p-2 rounded-lg">
-                <MapPin className="h-6 w-6 text-red-600" />
+             
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">ยืนยันที่อยู่</h1>
@@ -227,7 +216,7 @@ export default function Component() {
                         <p className="text-sm text-gray-600">ทั้งหมด</p>
                         <p className="text-2xl font-bold text-gray-900">65</p>
                       </div>
-                      <MapPin className="h-8 w-8 text-gray-600" />
+                    
                     </div>
                   </CardContent>
                 </Card>
@@ -259,7 +248,7 @@ export default function Component() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-4">
                                 <div className="bg-blue-100 p-2 rounded-lg">
-                                  <MapPin className="h-5 w-5 text-blue-600" />
+                                
                                 </div>
                                 <div>
                                   <h3 className="font-semibold text-gray-900">{verification.user.name}</h3>
@@ -278,11 +267,7 @@ export default function Component() {
                                     {getAddressVerificationStatusBadge(
                                       verification.applicantAddress.verificationStatus,
                                     )}
-                                    {verification.applicantAddress.type === "individual" && (
-                                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                                        บุคคลธรรมดา
-                                      </Badge>
-                                    )}
+                                
                                     {verification.applicantAddress.type === "other" && (
                                       <Badge variant="secondary" className="bg-gray-50 text-gray-700 border-gray-200">
                                         อื่นๆ
@@ -300,7 +285,7 @@ export default function Component() {
                                 </div>
                               </div>
                               <div className="flex items-center space-x-2">
-                                {getPriorityBadge(verification.priority)}
+                                
                                 {getStatusBadge(verification.status)}
                                 <Button variant="outline" size="sm">
                                   <Eye className="h-4 w-4 mr-1" />
@@ -339,7 +324,7 @@ export default function Component() {
                   ← กลับไปรายการ
                 </Button>
                 <div className="flex items-center space-x-2">
-                  {selectedData && getPriorityBadge(selectedData.priority)}
+                  
                   {selectedData && getStatusBadge(selectedData.status)}
                 </div>
               </div>
@@ -366,7 +351,7 @@ export default function Component() {
                       <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
-                            <MapPin className="h-5 w-5 text-blue-600" />
+                            
                             ที่อยู่ของผู้ยื่นยันตัวตน
                           </CardTitle>
                         </CardHeader>
@@ -383,12 +368,7 @@ export default function Component() {
                                 ที่อยู่ทั่วไป
                               </Badge>
                             )}
-                            {getAddressVerificationStatusBadge(selectedData.applicantAddress.verificationStatus)}
-                            {selectedData.applicantAddress.type === "individual" && (
-                              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                                บุคคลธรรมดา
-                              </Badge>
-                            )}
+                            
                             {selectedData.applicantAddress.type === "other" && (
                               <Badge variant="secondary" className="bg-gray-50 text-gray-700 border-gray-200">
                                 อื่นๆ
@@ -437,30 +417,11 @@ export default function Component() {
                           </div>
 
                           {/* Action Buttons */}
-                          <div className="flex gap-2 pt-4 border-t">
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4 mr-1" />
-                              แก้ไข
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 bg-transparent"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          
                         </CardContent>
                       </Card>
                       {/* Add New Address Button for Applicant (if applicable) */}
-                      <Card className="border-dashed border-2 border-gray-300 hover:border-gray-400 transition-colors">
-                        <CardContent className="p-6">
-                          <Button variant="ghost" className="w-full h-auto p-4 text-gray-600 hover:text-gray-900">
-                            <Plus className="h-5 w-5 mr-2" />
-                            เพิ่มที่อยู่ใหม่
-                          </Button>
-                        </CardContent>
-                      </Card>
+                      
                     </TabsContent>
 
                     <TabsContent value="realEstate" className="mt-4">
@@ -534,20 +495,7 @@ export default function Component() {
                             </div>
                           </div>
 
-                          {/* Action Buttons */}
-                          <div className="flex gap-2 pt-4 border-t">
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4 mr-1" />
-                              แก้ไข
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 bg-transparent"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          
                         </CardContent>
                       </Card>
 
@@ -571,21 +519,7 @@ export default function Component() {
                         <CardDescription>ตรวจสอบและยืนยันข้อมูลที่อยู่</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {/* User Info */}
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <h4 className="font-medium text-blue-900 mb-2">ข้อมูลผู้ใช้</h4>
-                          <div className="space-y-1 text-sm">
-                            <p>
-                              <span className="font-medium">ชื่อ:</span> {selectedData.user.name}
-                            </p>
-                            <p>
-                              <span className="font-medium">อีเมล:</span> {selectedData.user.email}
-                            </p>
-                            <p>
-                              <span className="font-medium">เบอร์โทร:</span> {selectedData.user.phone}
-                            </p>
-                          </div>
-                        </div>
+                        
 
                         {/* Admin Comment */}
                         <div>
