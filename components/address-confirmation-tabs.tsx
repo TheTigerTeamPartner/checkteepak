@@ -9,11 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { getProvinces, getAmphoes, getDistricts, getZipcode } from "@/data/provinces"
-import { Trash2 } from "lucide-react"
-import { Check } from "lucide-react"
-import { Edit } from "lucide-react"
-import { Plus } from "lucide-react"
-import { X } from "lucide-react"
+import { Trash2, Check, Edit, Plus, X } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -34,6 +30,7 @@ function YourDialogComponent() {
     </Dialog>
   )
 }
+
 interface AddressState {
   id: string
   fullAddress: string
@@ -42,38 +39,55 @@ interface AddressState {
   subDistrict: string
   postalCode: string
   isDefault?: boolean
+  status?: 'pending' | 'verified' | 'rejected'
 }
 
 export default function AddressConfirmationTabs() {
   const [activeTab, setActiveTab] = useState("agent")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   const supabase = createClientComponentClient()
   const router = useRouter()
 
   const [agentAddresses, setAgentAddresses] = useState<AddressState[]>([])
   const [propertyAddresses, setPropertyAddresses] = useState<AddressState[]>([])
 
-  // Load addresses from Supabase
+  // Load user and addresses from Supabase
   useEffect(() => {
-    const loadAddresses = async () => {
+    const loadUserAndAddresses = async () => {
       setLoading(true)
       try {
-        // Load agent addresses (type_id = 1)
-        const { data: agentData } = await supabase
+        // Get current user
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError || !user) {
+          toast.error("กรุณาล็อกอินเพื่อดูที่อยู่ของคุณ")
+          router.push("/login")
+          return
+        }
+        setUserId(user.id)
+
+        // Load agent addresses (type_id = 1) for current user
+        const { data: agentData, error: agentError } = await supabase
           .from('addresses')
           .select('*')
           .eq('type_id', 1)
+          .eq('user_id', user.id)
           .order('is_default', { ascending: false })
           .order('created_at', { ascending: true })
 
-        // Load property addresses (type_id = 2)
-        const { data: propertyData } = await supabase
+        if (agentError) throw agentError
+
+        // Load property addresses (type_id = 2) for current user
+        const { data: propertyData, error: propertyError } = await supabase
           .from('addresses')
           .select('*')
           .eq('type_id', 2)
+          .eq('user_id', user.id)
           .order('is_default', { ascending: false })
           .order('created_at', { ascending: true })
+
+        if (propertyError) throw propertyError
 
         // Transform data to match our AddressState interface
         const transformAddress = (addr: any): AddressState => ({
@@ -83,7 +97,8 @@ export default function AddressConfirmationTabs() {
           district: addr.district,
           subDistrict: addr.sub_district,
           postalCode: addr.postal_code,
-          isDefault: addr.is_default
+          isDefault: addr.is_default,
+          status: addr.status
         })
 
         setAgentAddresses(agentData?.map(transformAddress) || [])
@@ -91,13 +106,13 @@ export default function AddressConfirmationTabs() {
 
       } catch (error) {
         console.error("Error loading addresses:", error)
-        toast.error("Failed to load addresses")
+        toast.error("ไม่สามารถโหลดที่อยู่ได้")
       } finally {
         setLoading(false)
       }
     }
 
-    loadAddresses()
+    loadUserAndAddresses()
   }, [supabase, router])
 
   const getAvailableOptions = (address: Partial<AddressState>) => {
@@ -163,7 +178,7 @@ export default function AddressConfirmationTabs() {
       province: "",
       district: "",
       subDistrict: "",
-      postalCode: "",
+      postalCode: ""
     }
 
     if (type === "agent") {
@@ -180,23 +195,20 @@ export default function AddressConfirmationTabs() {
   }
 
   const handleSaveAddress = async (type: "agent" | "property", id: string) => {
-    setLoading(true);
+    setLoading(true)
     try {
-      // ตรวจสอบการล็อกอินและดึงข้อมูลผู้ใช้
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('กรุณาล็อกอินก่อนบันทึกที่อยู่');
+      if (!userId) {
+        throw new Error('กรุณาล็อกอินก่อนบันทึกที่อยู่')
       }
   
-      const addresses = type === "agent" ? agentAddresses : propertyAddresses;
-      const addressToSave = addresses.find(addr => addr.id === id);
+      const addresses = type === "agent" ? agentAddresses : propertyAddresses
+      const addressToSave = addresses.find(addr => addr.id === id)
       
       if (!addressToSave) {
-        throw new Error('ไม่พบที่อยู่ที่จะบันทึก');
+        throw new Error('ไม่พบที่อยู่ที่จะบันทึก')
       }
   
-      const typeId = type === "agent" ? 1 : 2;
+      const typeId = type === "agent" ? 1 : 2
       const addressData = {
         type_id: typeId,
         full_address: addressToSave.fullAddress,
@@ -205,53 +217,61 @@ export default function AddressConfirmationTabs() {
         sub_district: addressToSave.subDistrict,
         postal_code: addressToSave.postalCode,
         is_default: addressToSave.isDefault || false,
-        user_id: user.id // ต้องระบุ user_id
-      };
+        user_id: userId,
+        status: id.startsWith('temp-') ? 'pending' : addressToSave.status
+      }
   
-      let result;
+      let result
       if (id.startsWith('temp-')) {
-        // เพิ่มที่อยู่ใหม่
+        // Add new address
         const { data, error } = await supabase
           .from('addresses')
           .insert(addressData)
           .select()
-          .single();
+          .single()
         
-        if (error) throw error;
-        result = data;
+        if (error) throw error
+        result = data
       } else {
-        // อัปเดตที่อยู่ที่มีอยู่
+        // Update existing address
         const { data, error } = await supabase
           .from('addresses')
           .update(addressData)
           .eq('id', id)
           .select()
-          .single();
+          .single()
         
-        if (error) throw error;
-        result = data;
+        if (error) throw error
+        result = data
       }
   
-      // อัปเดตสถานะ local
-      const updatedAddress = {
+      // Update local state
+      const updatedAddress: AddressState = {
         id: result.id,
         fullAddress: result.full_address,
         province: result.province,
         district: result.district,
         subDistrict: result.sub_district,
         postalCode: result.postal_code,
-        isDefault: result.is_default
-      };
+        isDefault: result.is_default,
+        status: result.status
+      }
   
-      // ... อัปเดต state ตามปกติ
-  
+      // Update the appropriate state array
+      const setter = type === "agent" ? setAgentAddresses : setPropertyAddresses
+      setter(prev => prev.map(addr => addr.id === id ? updatedAddress : addr))
+      
+      setEditingId(null)
+      toast.success("บันทึกที่อยู่สำเร็จ รอการอนุมัติ")
+      router.refresh()
     } catch (error) {
-      console.error("Error saving address:", error);
-      toast.error(error.message || 'เกิดข้อผิดพลาดในการบันทึกที่อยู่');
+      console.error("Error saving address:", error)
+      toast.error(error.message || 'เกิดข้อผิดพลาดในการบันทึกที่อยู่')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
+
   const handleCancelEdit = () => {
     setEditingId(null)
     
@@ -271,6 +291,7 @@ export default function AddressConfirmationTabs() {
           .from('addresses')
           .delete()
           .eq('id', id)
+          .eq('user_id', userId)
         
         if (error) throw error
       }
@@ -282,11 +303,11 @@ export default function AddressConfirmationTabs() {
         setPropertyAddresses(prev => prev.filter(addr => addr.id !== id))
       }
 
-      toast.success("Address deleted successfully")
+      toast.success("ลบที่อยู่สำเร็จ")
       router.refresh()
     } catch (error) {
       console.error("Error deleting address:", error)
-      toast.error("Failed to delete address")
+      toast.error("ไม่สามารถลบที่อยู่ได้")
     } finally {
       setLoading(false)
     }
@@ -297,11 +318,12 @@ export default function AddressConfirmationTabs() {
     try {
       const typeId = type === "agent" ? 1 : 2
       
-      // First, set all addresses of this type to not default
+      // First, set all addresses of this type to not default for current user
       const { error: resetError } = await supabase
         .from('addresses')
         .update({ is_default: false })
         .eq('type_id', typeId)
+        .eq('user_id', userId)
       
       if (resetError) throw resetError
 
@@ -310,6 +332,7 @@ export default function AddressConfirmationTabs() {
         .from('addresses')
         .update({ is_default: true })
         .eq('id', id)
+        .eq('user_id', userId)
       
       if (setError) throw setError
 
@@ -330,13 +353,37 @@ export default function AddressConfirmationTabs() {
         )
       }
 
-      toast.success("Default address updated")
+      toast.success("ตั้งเป็นที่อยู่หลักสำเร็จ")
       router.refresh()
     } catch (error) {
       console.error("Error setting default address:", error)
-      toast.error("Failed to update default address")
+      toast.error("ไม่สามารถตั้งเป็นที่อยู่หลักได้")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const getStatusBadge = (status: AddressState['status']) => {
+    switch (status) {
+      case 'verified':
+        return (
+          <div className="bg-green-50 text-green-600 px-3 py-1 rounded-md text-sm inline-flex items-center">
+            <Check className="w-4 h-4 mr-1" /> อนุมัติแล้ว
+          </div>
+        )
+      case 'rejected':
+        return (
+          <div className="bg-red-50 text-red-600 px-3 py-1 rounded-md text-sm inline-flex items-center">
+            <X className="w-4 h-4 mr-1" /> ไม่อนุมัติ
+          </div>
+        )
+      case 'pending':
+      default:
+        return (
+          <div className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-md text-sm inline-flex items-center">
+            รอการอนุมัติ
+          </div>
+        )
     }
   }
 
@@ -352,11 +399,14 @@ export default function AddressConfirmationTabs() {
       <Card key={address.id} className="mb-4">
         <CardContent className="pt-6">
           <div className="grid gap-4">
-            {address.isDefault && (
-              <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-md text-sm inline-flex items-center">
-                <Check className="w-4 h-4 mr-1" /> ที่อยู่หลัก
-              </div>
-            )}
+            <div className="flex gap-2">
+              {address.isDefault && (
+                <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-md text-sm inline-flex items-center">
+                  <Check className="w-4 h-4 mr-1" /> ที่อยู่หลัก
+                </div>
+              )}
+              {!address.id.startsWith('temp-') && address.status && getStatusBadge(address.status)}
+            </div>
 
             <div className="grid gap-2">
               <Label htmlFor={`${type}-${address.id}-full-address`}>ที่อยู่ทั่วไป</Label>
@@ -440,7 +490,7 @@ export default function AddressConfirmationTabs() {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSetDefault(type, address.id)}
-                  disabled={isEditing || loading}
+                  disabled={isEditing || loading || address.status !== 'verified'}
                 >
                   ตั้งเป็นที่อยู่หลัก
                 </Button>
@@ -521,7 +571,6 @@ export default function AddressConfirmationTabs() {
           <TabsTrigger value="property">ที่อยู่ของอสังหาริมทรัพย์</TabsTrigger>
         </TabsList>
 
-        {/* AGENT */}
         <TabsContent value="agent" className="mt-4">
           <div className="space-y-4">
             {agentAddresses.length > 0 ? (
@@ -545,7 +594,6 @@ export default function AddressConfirmationTabs() {
           </div>
         </TabsContent>
 
-        {/* PROPERTY */}
         <TabsContent value="property" className="mt-4">
           <div className="space-y-4">
             {propertyAddresses.length > 0 ? (
