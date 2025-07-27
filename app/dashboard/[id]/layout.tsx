@@ -58,7 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       title: "จัดการโปรไฟล์",
       icon: <User className="h-5 w-5" />,
     },
-    {
+{
       href: `/dashboard/${user.id}/confirm`,
       title: "ยืนยันเอกสาร",
       icon: <FileCheck className="h-5 w-5" />,
@@ -67,11 +67,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       href: `/dashboard/${user.id}/address`,
       title: "ยืนยันที่อยู่",
       icon: <CheckCircle className="h-5 w-5" />,
-    },
-    {
-      href: `/dashboard/${user.id}/settings`,
-      title: "ตั้งค่าบัญชี",
-      icon: <Settings className="h-5 w-5" />,
     },
 
     

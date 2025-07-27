@@ -15,7 +15,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
-interface Email {
+export interface Email {
   id: number | string;
   value: string;
   verified: boolean;

@@ -1,193 +1,186 @@
-"use client"
+"use client";
 
-import React, { useState, useRef } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
-import { toast } from './ui/use-toast';
+import { useState, useRef, forwardRef } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import ReactCrop, { Crop, PixelCrop } from "react-image-crop";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { v4 as uuidv4 } from "uuid";
+import "react-image-crop/dist/ReactCrop.css";
 
-interface ImageCropUploaderProps {
-  onUploadComplete: (url: string) => void;
-  aspectRatio?: number;
+interface ImageUploaderProps {
   bucket: string;
   folder: string;
-  trigger: React.ReactNode;
+  imageUrl: string;
+  onUpload: (url: string) => void;
+  isEditing: boolean;
+  aspectRatio: number;
+  className?: string;
+  inputRef?: React.RefObject<HTMLInputElement>;
 }
 
-function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<File> {
-  const canvas = document.createElement('canvas');
-  const scaleX = image.naturalWidth / image.width;
-  const scaleY = image.naturalHeight / image.height;
-  canvas.width = crop.width;
-  canvas.height = crop.height;
-  const ctx = canvas.getContext('2d');
-
-  if (!ctx) {
-    return Promise.reject(new Error('Could not get canvas context'));
-  }
-
-  const pixelRatio = window.devicePixelRatio;
-  canvas.width = crop.width * pixelRatio;
-  canvas.height = crop.height * pixelRatio;
-  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-  ctx.imageSmoothingQuality = 'high';
-
-  ctx.drawImage(
-    image,
-    crop.x * scaleX,
-    crop.y * scaleY,
-    crop.width * scaleX,
-    crop.height * scaleY,
-    0,
-    0,
-    crop.width,
-    crop.height
-  );
-
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          reject(new Error('Canvas is empty'));
-          return;
-        }
-        const file = new File([blob], 'cropped-image.jpeg', { type: 'image/jpeg' });
-        resolve(file);
-      },
-      'image/jpeg',
-      0.95
-    );
-  });
-}
-
-export default function ImageCropUploader({
-  onUploadComplete,
-  aspectRatio = 1,
+const ImageUploader = forwardRef<HTMLInputElement, ImageUploaderProps>(({
   bucket,
   folder,
-  trigger,
-}: ImageCropUploaderProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [imgSrc, setImgSrc] = useState('');
-  const [crop, setCrop] = useState<Crop>();
-  const [isUploading, setIsUploading] = useState(false);
+  imageUrl,
+  onUpload,
+  isEditing,
+  aspectRatio,
+  className,
+  inputRef,
+}, ref) => {
+  const supabase = createClientComponentClient();
+  const { toast } = useToast();
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState<Crop>({ unit: "%", width: 50, height: 50, x: 25, y: 25 });
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setCrop(undefined); // Makes crop preview update between images
+      const file = e.target.files[0];
+      console.log("Selected file:", file);
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: "ไฟล์ใหญ่เกินไป", description: "กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 5MB", variant: "destructive" });
+        return;
+      }
       const reader = new FileReader();
-      reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
-      reader.readAsDataURL(e.target.files[0]);
-      setIsModalOpen(true);
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setImageSrc(event.target.result as string);
+          setIsDialogOpen(true);
+          console.log("ImageSrc set, dialog opened");
+        } else {
+          console.error("Failed to read file as data URL");
+          toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถอ่านไฟล์ได้", variant: "destructive" });
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    console.log("Image loaded for cropping");
     imgRef.current = e.currentTarget;
-    const { width, height } = e.currentTarget;
-    const newCrop = centerCrop(
-      makeAspectCrop(
-        {
-          unit: '%',
-          width: 90,
-        },
-        aspectRatio,
-        width,
-        height
-      ),
-      width,
-      height
-    );
-    setCrop(newCrop);
+  };
+
+  const getCroppedImage = async (image: HTMLImageElement, crop: PixelCrop): Promise<Blob> => {
+    const canvas = document.createElement("canvas");
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+
+    canvas.width = crop.width * scaleX;
+    canvas.height = crop.height * scaleY;
+    const ctx = canvas.getContext("2d");
+
+    if (ctx) {
+      ctx.drawImage(
+        image,
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY,
+        0,
+        0,
+        crop.width * scaleX,
+        crop.height * scaleY
+      );
+    }
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else console.error("Failed to create blob from canvas");
+      }, "image/jpeg");
+    });
   };
 
   const handleUpload = async () => {
-    if (!imgRef.current || !crop || !crop.width || !crop.height) {
-      toast({ title: 'Crop error', description: 'Please select a crop area.', variant: 'destructive' });
+    if (!completedCrop || !imgRef.current) {
+      toast({ title: "เกิดข้อผิดพลาด", description: "กรุณาครอบตัดภาพก่อนอัปโหลด", variant: "destructive" });
       return;
     }
 
-    setIsUploading(true);
     try {
-      const croppedImageFile = await getCroppedImg(imgRef.current, crop);
-      
-      const formData = new FormData();
-      formData.append('file', croppedImageFile);
-      formData.append('bucket', bucket);
-      formData.append('folder', folder);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      const blob = await getCroppedImage(imgRef.current, completedCrop);
+      const fileName = `${user.id}/${uuidv4()}.jpg`;
+      const filePath = `${folder}/${fileName}`;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Upload failed');
-      }
+      console.log("Uploading to:", filePath);
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, blob, {
+          contentType: "image/jpeg",
+          upsert: true,
+          metadata: { owner_id: user.id },
+        });
 
-      const result = await response.json();
-      const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${bucket}/${result.data.path}`;
+      if (error) throw error;
 
-      onUploadComplete(publicUrl);
-      toast({ title: 'Success', description: 'Image uploaded successfully.' });
-    } catch (error: any) {
-      toast({ title: 'Upload Error', description: error.message, variant: 'destructive' });
-    } finally {
-      setIsUploading(false);
-      setIsModalOpen(false);
-      setImgSrc('');
-      if(fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+      console.log("Upload success, URL:", publicUrlData.publicUrl);
+      onUpload(publicUrlData.publicUrl);
+
+      setIsDialogOpen(false);
+      setImageSrc(null);
+      toast({ title: "อัปโหลดสำเร็จ", description: "รูปภาพได้รับการอัปเดตแล้ว" });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถอัปโหลดรูปภาพได้", variant: "destructive" });
     }
   };
 
   return (
     <>
-      <input
-        type="file"
-        accept="image/*"
-        ref={fileInputRef}
-        onChange={onSelectFile}
-        className="hidden"
-      />
-      <div onClick={() => fileInputRef.current?.click()}>{trigger}</div>
-
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Crop Image</DialogTitle>
-          </DialogHeader>
-          {imgSrc && (
-            <ReactCrop
-              crop={crop}
-              onChange={(_, percentCrop: Crop) => setCrop(percentCrop)}
-              aspect={aspectRatio}
-            >
-              <img src={imgSrc} onLoad={onImageLoad} alt="Crop preview" />
-            </ReactCrop>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)} disabled={isUploading}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpload} disabled={isUploading}>
-              {isUploading ? 'Uploading...' : 'Upload & Save'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {isEditing && (
+        <>
+          <input
+            type="file"
+            accept="image/*"
+            ref={inputRef || ref}
+            onChange={handleFileChange}
+            className={className || "hidden"}
+          />
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>ครอบตัดรูปภาพ</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {imageSrc && (
+                  <ReactCrop
+                    crop={crop}
+                    onChange={(c) => setCrop(c)}
+                    onComplete={(c) => setCompletedCrop(c)}
+                    aspect={aspectRatio}
+                    className="max-h-[400px] overflow-auto"
+                  >
+                    <img src={imageSrc} onLoad={onImageLoad} alt="Crop preview" />
+                  </ReactCrop>
+                )}
+                {!imageSrc && <p className="text-gray-500">กรุณาเลือกไฟล์รูปภาพ</p>}
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    ยกเลิก
+                  </Button>
+                  <Button onClick={handleUpload} disabled={!completedCrop}>
+                    อัปโหลด
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </>
   );
-}
+});
+
+ImageUploader.displayName = "ImageUploader";
+
+export default ImageUploader;

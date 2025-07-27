@@ -1,26 +1,25 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 import {
   User,
   Camera,
@@ -44,14 +43,15 @@ import {
   AlertCircle,
   Edit,
   Upload,
-} from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { toast } from "@/components/ui/use-toast"
-import EmailVerification from "@/components/EmailVerification"
+} from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "@/components/ui/use-toast";
+import EmailVerification from "@/components/EmailVerification";
+import ImageUploader from "@/components/ImageUploader";
 
 export default function ProfileManagementPage() {
-  const [activeTab, setActiveTab] = useState("basic")
-  const [isEditing, setIsEditing] = useState(false)
+  const [activeTab, setActiveTab] = useState("basic");
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     basic: {
       firstName: "",
@@ -86,14 +86,16 @@ export default function ProfileManagementPage() {
       showBanking: false,
     },
     pendingApprovals: [],
-  })
-  const [newSpecialty, setNewSpecialty] = useState("")
-  const [newMarketingChannel, setNewMarketingChannel] = useState({ type: "", url: "" })
+  });
+  const profileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [newSpecialty, setNewSpecialty] = useState("");
+  const [newMarketingChannel, setNewMarketingChannel] = useState({ type: "", url: "" });
   const [newBankAccount, setNewBankAccount] = useState({
     bankName: "",
     accountNumber: "",
     accountName: "",
-  })
+  });
 
   // Fetch approvals from API
   useEffect(() => {
@@ -104,7 +106,6 @@ export default function ProfileManagementPage() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        // Ensure pendingApprovals is always an array
         const approvals = Array.isArray(data) ? data : data.status ? [{ status: data.status }] : [];
         setFormData((prev) => ({
           ...prev,
@@ -117,7 +118,6 @@ export default function ProfileManagementPage() {
           description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ",
           variant: "destructive",
         });
-        // Set empty array on error to prevent map issues
         setFormData((prev) => ({
           ...prev,
           pendingApprovals: [],
@@ -141,6 +141,7 @@ export default function ProfileManagementPage() {
         location: formData.basic.address,
         bio: formData.basic.bio,
         image_url: formData.basic.profileImage,
+        cover_image_url: formData.basic.coverImage,
         phone: formData.contact.phones[0]?.value || "",
         email: formData.contact.emails[0]?.value || "",
         line_id: formData.contact.lineIds[0]?.value || "",
@@ -166,12 +167,10 @@ export default function ProfileManagementPage() {
         throw new Error(result.error || "เกิดข้อผิดพลาดในการส่งข้อมูล");
       }
 
-      // Fetch updated approvals after submission
       const fetchApprovals = async () => {
         try {
           const response = await fetch('/api/agents/approvals');
           const data = await response.json();
-          // Ensure pendingApprovals is always an array
           const approvals = Array.isArray(data) ? data : data.status ? [{ status: data.status }] : [];
           setFormData((prev) => ({
             ...prev,
@@ -179,7 +178,6 @@ export default function ProfileManagementPage() {
           }));
         } catch (error) {
           console.error('Error fetching approvals after submission:', error);
-          // Set empty array on error
           setFormData((prev) => ({
             ...prev,
             pendingApprovals: [],
@@ -342,7 +340,6 @@ export default function ProfileManagementPage() {
           <TabsTrigger value="approvals">สถานะอนุมัติ</TabsTrigger>
         </TabsList>
 
-        {/* Basic Information Tab */}
         <TabsContent value="basic" className="space-y-6">
           <Card>
             <CardHeader>
@@ -359,10 +356,33 @@ export default function ProfileManagementPage() {
                   <Label className="text-base font-medium">รูปโปรไฟล์</Label>
                   <div className="flex items-center gap-4 mt-2">
                     <Avatar className="w-20 h-20">
-                      <AvatarImage src={formData.basic.profileImage || "/placeholder.svg"} />
+                      <AvatarImage src={formData.basic.profileImage || "/placeholder.svg"} onError={(e) => console.log("Profile image load error:", e)} />
                       <AvatarFallback>สช</AvatarFallback>
                     </Avatar>
-                    <Button variant="outline" size="sm">
+                    <ImageUploader
+                      bucket="profile"
+                      folder="avatars"
+                      imageUrl={formData.basic.profileImage}
+                      onUpload={(url) => {
+                        console.log("Profile image uploaded, new URL:", url);
+                        setFormData((prev) => ({
+                          ...prev,
+                          basic: { ...prev.basic, profileImage: url },
+                        }));
+                      }}
+                      isEditing={true}
+                      aspectRatio={1}
+                      inputRef={profileInputRef}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        console.log("Triggering profile image upload");
+                        profileInputRef.current?.click();
+                      }}
+                    >
                       <Upload className="w-4 h-4 mr-2" />
                       เปลี่ยนรูปโปรไฟล์
                     </Button>
@@ -377,9 +397,33 @@ export default function ProfileManagementPage() {
                         src={formData.basic.coverImage || "/placeholder.svg"}
                         alt="Cover"
                         className="w-full h-full object-cover"
+                        onError={(e) => console.log("Cover image load error:", e)}
                       />
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <Button variant="secondary" size="sm">
+                        <ImageUploader
+                          bucket="profile"
+                          folder="covers"
+                          imageUrl={formData.basic.coverImage}
+                          onUpload={(url) => {
+                            console.log("Cover image uploaded, new URL:", url);
+                            setFormData((prev) => ({
+                              ...prev,
+                              basic: { ...prev.basic, coverImage: url },
+                            }));
+                          }}
+                          isEditing={true}
+                          aspectRatio={16 / 9}
+                          inputRef={coverInputRef}
+                          className="hidden"
+                        />
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            console.log("Triggering cover image upload");
+                            coverInputRef.current?.click();
+                          }}
+                        >
                           <Camera className="w-4 h-4 mr-2" />
                           เปลี่ยนรูปปก
                         </Button>
