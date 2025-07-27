@@ -1,21 +1,22 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
@@ -43,15 +44,14 @@ import {
   AlertCircle,
   Edit,
   Upload,
-} from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "@/components/ui/use-toast";
-import EmailVerification from "@/components/EmailVerification";
-import ImageUploader from "@/components/ImageUploader";
+} from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { toast } from "@/components/ui/use-toast"
+import EmailVerification from "@/components/EmailVerification"
 
 export default function ProfileManagementPage() {
-  const [activeTab, setActiveTab] = useState("basic");
-  const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState("basic")
+  const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
     basic: {
       firstName: "",
@@ -60,21 +60,21 @@ export default function ProfileManagementPage() {
       coverImage: "",
       address: "",
       bio: "",
-      specialties: [],
+      specialties: [] as string[],
     },
     contact: {
-      phones: [],
-      emails: [],
-      lineIds: [],
+      phones: [] as Phone[],
+      emails: [] as Email[],
+      lineIds: [] as LineId[],
     },
     marketing: {
-      facebookPages: [],
-      instagramAccounts: [],
-      lineOAs: [],
-      websites: [],
-      otherChannels: [],
+      facebookPages: [] as SocialAccount[],
+      instagramAccounts: [] as SocialAccount[],
+      lineOAs: [] as SocialAccount[],
+      websites: [] as SocialAccount[],
+      otherChannels: [] as SocialAccount[],
     },
-    banking: [],
+    banking: [] as BankAccount[],
     visibility: {
       showPhone: true,
       showEmail: true,
@@ -86,11 +86,9 @@ export default function ProfileManagementPage() {
       showBanking: false,
     },
     pendingApprovals: [],
-  });
-  const profileInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
-  const [newSpecialty, setNewSpecialty] = useState("");
-  const [newMarketingChannel, setNewMarketingChannel] = useState({ type: "", url: "" });
+  })
+  const [newSpecialty, setNewSpecialty] = useState("")
+  const [newMarketingChannel, setNewMarketingChannel] = useState({ type: "", url: "" })
   const [newBankAccount, setNewBankAccount] = useState({
     bankName: "",
     accountNumber: "",
@@ -106,6 +104,7 @@ export default function ProfileManagementPage() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+        // Ensure pendingApprovals is always an array
         const approvals = Array.isArray(data) ? data : data.status ? [{ status: data.status }] : [];
         setFormData((prev) => ({
           ...prev,
@@ -118,6 +117,7 @@ export default function ProfileManagementPage() {
           description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ",
           variant: "destructive",
         });
+        // Set empty array on error to prevent map issues
         setFormData((prev) => ({
           ...prev,
           pendingApprovals: [],
@@ -143,7 +143,7 @@ export default function ProfileManagementPage() {
         image_url: formData.basic.profileImage,
         cover_image_url: formData.basic.coverImage,
         phone: formData.contact.phones[0]?.value || "",
-        email: formData.contact.emails[0]?.value || "",
+        email: formData.contact.emails.find(e => e.verified)?.value || "",
         line_id: formData.contact.lineIds[0]?.value || "",
         social_facebook: formData.marketing.facebookPages[0]?.url || "",
         instagram: formData.marketing.instagramAccounts[0]?.url || "",
@@ -161,16 +161,17 @@ export default function ProfileManagementPage() {
         body: JSON.stringify(payload),
       });
 
-      const result = await res.json();
-
       if (!res.ok) {
-        throw new Error(result.error || "เกิดข้อผิดพลาดในการส่งข้อมูล");
+        const error = await res.json();
+        throw new Error(error.message || "เกิดข้อผิดพลาดในการส่งข้อมูล");
       }
 
+      // Fetch updated approvals after submission
       const fetchApprovals = async () => {
         try {
           const response = await fetch('/api/agents/approvals');
           const data = await response.json();
+          // Ensure pendingApprovals is always an array
           const approvals = Array.isArray(data) ? data : data.status ? [{ status: data.status }] : [];
           setFormData((prev) => ({
             ...prev,
@@ -178,6 +179,7 @@ export default function ProfileManagementPage() {
           }));
         } catch (error) {
           console.error('Error fetching approvals after submission:', error);
+          // Set empty array on error
           setFormData((prev) => ({
             ...prev,
             pendingApprovals: [],
@@ -199,7 +201,7 @@ export default function ProfileManagementPage() {
     }
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
         return (
@@ -208,7 +210,7 @@ export default function ProfileManagementPage() {
             รอการอนุมัติ
           </Badge>
         );
-      case "verified":
+      case "approved":
         return (
           <Badge variant="outline" className="text-green-600 border-green-600">
             <CheckCircle className="w-3 h-3 mr-1" />
@@ -227,12 +229,8 @@ export default function ProfileManagementPage() {
     }
   };
 
-  const handleSubmitForApproval = () => {
-    submitAgentProfile();
-  };
-
   const handleCopyProfileLink = () => {
-    navigator.clipboard.writeText(`https://checkteepak.com/agent/somchai-jaidee`);
+    navigator.clipboard.writeText(`https://example.com/agent/profile`);
     toast({
       title: "คัดลอกลิงก์สำเร็จ",
       description: "ลิงก์โปรไฟล์ได้รับการคัดลอกไปยังคลิปบอร์ดแล้ว",
@@ -241,7 +239,7 @@ export default function ProfileManagementPage() {
 
   const addSpecialty = () => {
     if (newSpecialty.trim()) {
-      setFormData((prev) => ({
+      setFormData(prev => ({
         ...prev,
         basic: {
           ...prev.basic,
@@ -252,8 +250,8 @@ export default function ProfileManagementPage() {
     }
   };
 
-  const removeSpecialty = (index) => {
-    setFormData((prev) => ({
+  const removeSpecialty = (index: number) => {
+    setFormData(prev => ({
       ...prev,
       basic: {
         ...prev.basic,
@@ -264,12 +262,12 @@ export default function ProfileManagementPage() {
 
   const addBankAccount = () => {
     if (newBankAccount.bankName && newBankAccount.accountNumber && newBankAccount.accountName) {
-      setFormData((prev) => ({
+      setFormData(prev => ({
         ...prev,
         banking: [
           ...prev.banking,
           {
-            id: Date.now(),
+            id: Date.now().toString(),
             ...newBankAccount,
             isPrimary: prev.banking.length === 0,
           },
@@ -279,17 +277,17 @@ export default function ProfileManagementPage() {
     }
   };
 
-  const removeBankAccount = (id) => {
-    setFormData((prev) => ({
+  const removeBankAccount = (id: string) => {
+    setFormData(prev => ({
       ...prev,
-      banking: prev.banking.filter((account) => account.id !== id),
+      banking: prev.banking.filter(account => account.id !== id),
     }));
   };
 
-  const setPrimaryAccount = (id) => {
-    setFormData((prev) => ({
+  const setPrimaryAccount = (id: string) => {
+    setFormData(prev => ({
       ...prev,
-      banking: prev.banking.map((account) => ({
+      banking: prev.banking.map(account => ({
         ...account,
         isPrimary: account.id === id,
       })),
@@ -310,7 +308,7 @@ export default function ProfileManagementPage() {
             คัดลอกลิงก์โปรไฟล์
           </Button>
           <Button variant="outline" asChild>
-            <a href="/agent/somchai-jaidee" target="_blank" rel="noreferrer">
+            <a href="/agent/profile" target="_blank" rel="noreferrer">
               <ExternalLink className="w-4 h-4 mr-2" />
               ดูตัวอย่าง
             </a>
@@ -319,11 +317,12 @@ export default function ProfileManagementPage() {
       </div>
 
       {/* Alert for pending approvals */}
-      {Array.isArray(formData.pendingApprovals) && formData.pendingApprovals.some((item) => item.status === "pending") && (
+      {formData.pendingApprovals.some(item => item.status === "pending") && (
         <Card className="border-yellow-200 bg-yellow-50">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 text-yellow-800">
-              {/* เนื้อหา alert */}
+              <AlertCircle className="w-5 h-5" />
+              <p>คุณมีข้อมูลที่รอการอนุมัติ กรุณารอการตรวจสอบจากทีมงาน</p>
             </div>
           </CardContent>
         </Card>
@@ -356,7 +355,7 @@ export default function ProfileManagementPage() {
                   <Label className="text-base font-medium">รูปโปรไฟล์</Label>
                   <div className="flex items-center gap-4 mt-2">
                     <Avatar className="w-20 h-20">
-                      <AvatarImage src={formData.basic.profileImage || "/placeholder.svg"} onError={(e) => console.log("Profile image load error:", e)} />
+                      <AvatarImage src={formData.basic.profileImage || "/placeholder.svg"} />
                       <AvatarFallback>สช</AvatarFallback>
                     </Avatar>
                     <ImageUploader
@@ -443,7 +442,7 @@ export default function ProfileManagementPage() {
                     id="firstName"
                     value={formData.basic.firstName}
                     onChange={(e) =>
-                      setFormData((prev) => ({
+                      setFormData(prev => ({
                         ...prev,
                         basic: { ...prev.basic, firstName: e.target.value },
                       }))
@@ -456,7 +455,7 @@ export default function ProfileManagementPage() {
                     id="lastName"
                     value={formData.basic.lastName}
                     onChange={(e) =>
-                      setFormData((prev) => ({
+                      setFormData(prev => ({
                         ...prev,
                         basic: { ...prev.basic, lastName: e.target.value },
                       }))
@@ -471,7 +470,7 @@ export default function ProfileManagementPage() {
                   id="address"
                   value={formData.basic.address}
                   onChange={(e) =>
-                    setFormData((prev) => ({
+                    setFormData(prev => ({
                       ...prev,
                       basic: { ...prev.basic, address: e.target.value },
                     }))
@@ -486,7 +485,7 @@ export default function ProfileManagementPage() {
                   id="bio"
                   value={formData.basic.bio}
                   onChange={(e) =>
-                    setFormData((prev) => ({
+                    setFormData(prev => ({
                       ...prev,
                       basic: { ...prev.basic, bio: e.target.value },
                     }))
@@ -504,7 +503,10 @@ export default function ProfileManagementPage() {
                     {formData.basic.specialties.map((specialty, index) => (
                       <Badge key={index} variant="secondary" className="flex items-center gap-1">
                         {specialty}
-                        <button onClick={() => removeSpecialty(index)} className="ml-1 hover:text-red-600">
+                        <button 
+                          onClick={() => removeSpecialty(index)} 
+                          className="ml-1 hover:text-red-600"
+                        >
                           <Trash2 className="w-3 h-3" />
                         </button>
                       </Badge>
@@ -549,11 +551,14 @@ export default function ProfileManagementPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setFormData((prev) => ({
+                      setFormData(prev => ({
                         ...prev,
                         contact: {
                           ...prev.contact,
-                          phones: [...(prev.contact.phones || []), { value: "", verified: false, id: Date.now() }],
+                          phones: [
+                            ...prev.contact.phones, 
+                            { id: Date.now().toString(), value: "", verified: false }
+                          ],
                         },
                       }));
                     }}
@@ -564,14 +569,14 @@ export default function ProfileManagementPage() {
 
                 {/* List of phone numbers */}
                 <div className="space-y-3">
-                  {(formData.contact.phones || []).map((phone, index) => (
-                    <div key={phone.id || index} className="flex items-center gap-2">
+                  {formData.contact.phones.map((phone, index) => (
+                    <div key={phone.id} className="flex items-center gap-2">
                       <Input
                         value={phone.value}
                         onChange={(e) => {
-                          const updatedPhones = [...(formData.contact.phones || [])];
+                          const updatedPhones = [...formData.contact.phones];
                           updatedPhones[index].value = e.target.value;
-                          setFormData((prev) => ({
+                          setFormData(prev => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
@@ -597,8 +602,8 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedPhones = (formData.contact.phones || []).filter((_, i) => i !== index);
-                          setFormData((prev) => ({
+                          const updatedPhones = formData.contact.phones.filter((_, i) => i !== index);
+                          setFormData(prev => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
@@ -617,7 +622,18 @@ export default function ProfileManagementPage() {
               <Separator />
 
               {/* Email Addresses */}
-              <EmailVerification formData={formData} setFormData={setFormData} />
+              <EmailVerification
+                emails={formData.contact.emails}
+                onEmailsChange={(updatedEmails) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    contact: {
+                      ...prev.contact,
+                      emails: updatedEmails,
+                    },
+                  }));
+                }}
+              />
 
               <Separator />
 
@@ -632,11 +648,14 @@ export default function ProfileManagementPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setFormData((prev) => ({
+                      setFormData(prev => ({
                         ...prev,
                         contact: {
                           ...prev.contact,
-                          lineIds: [...(prev.contact.lineIds || []), { value: "", verified: false, id: Date.now() }],
+                          lineIds: [
+                            ...prev.contact.lineIds, 
+                            { id: Date.now().toString(), value: "", verified: false }
+                          ],
                         },
                       }));
                     }}
@@ -647,14 +666,14 @@ export default function ProfileManagementPage() {
 
                 {/* List of Line IDs */}
                 <div className="space-y-3">
-                  {(formData.contact.lineIds || []).map((lineId, index) => (
-                    <div key={lineId.id || index} className="flex items-center gap-2">
+                  {formData.contact.lineIds.map((lineId, index) => (
+                    <div key={lineId.id} className="flex items-center gap-2">
                       <Input
                         value={lineId.value}
                         onChange={(e) => {
-                          const updatedLineIds = [...(formData.contact.lineIds || [])];
+                          const updatedLineIds = [...formData.contact.lineIds];
                           updatedLineIds[index].value = e.target.value;
-                          setFormData((prev) => ({
+                          setFormData(prev => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
@@ -685,8 +704,8 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedLineIds = (formData.contact.lineIds || []).filter((_, i) => i !== index);
-                          setFormData((prev) => ({
+                          const updatedLineIds = formData.contact.lineIds.filter((_, i) => i !== index);
+                          setFormData(prev => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
@@ -742,13 +761,13 @@ export default function ProfileManagementPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setFormData((prev) => ({
+                      setFormData(prev => ({
                         ...prev,
                         marketing: {
                           ...prev.marketing,
                           facebookPages: [
-                            ...(prev.marketing.facebookPages || []),
-                            { url: "", verified: false, id: Date.now() },
+                            ...prev.marketing.facebookPages,
+                            { id: Date.now().toString(), url: "", verified: false },
                           ],
                         },
                       }));
@@ -760,14 +779,14 @@ export default function ProfileManagementPage() {
 
                 {/* List of Facebook Pages */}
                 <div className="space-y-3">
-                  {(formData.marketing.facebookPages || []).map((page, index) => (
-                    <div key={page.id || index} className="flex items-center gap-2">
+                  {formData.marketing.facebookPages.map((page, index) => (
+                    <div key={page.id} className="flex items-center gap-2">
                       <Input
                         value={page.url}
                         onChange={(e) => {
-                          const updatedPages = [...(formData.marketing.facebookPages || [])];
+                          const updatedPages = [...formData.marketing.facebookPages];
                           updatedPages[index].url = e.target.value;
-                          setFormData((prev) => ({
+                          setFormData(prev => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
@@ -793,8 +812,8 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedPages = (formData.marketing.facebookPages || []).filter((_, i) => i !== index);
-                          setFormData((prev) => ({
+                          const updatedPages = formData.marketing.facebookPages.filter((_, i) => i !== index);
+                          setFormData(prev => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
@@ -823,13 +842,13 @@ export default function ProfileManagementPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setFormData((prev) => ({
+                      setFormData(prev => ({
                         ...prev,
                         marketing: {
                           ...prev.marketing,
                           instagramAccounts: [
-                            ...(prev.marketing.instagramAccounts || []),
-                            { url: "", verified: false, id: Date.now() },
+                            ...prev.marketing.instagramAccounts,
+                            { id: Date.now().toString(), url: "", verified: false },
                           ],
                         },
                       }));
@@ -841,14 +860,14 @@ export default function ProfileManagementPage() {
 
                 {/* List of Instagram Accounts */}
                 <div className="space-y-3">
-                  {(formData.marketing.instagramAccounts || []).map((account, index) => (
-                    <div key={account.id || index} className="flex items-center gap-2">
+                  {formData.marketing.instagramAccounts.map((account, index) => (
+                    <div key={account.id} className="flex items-center gap-2">
                       <Input
                         value={account.url}
                         onChange={(e) => {
-                          const updatedAccounts = [...(formData.marketing.instagramAccounts || [])];
+                          const updatedAccounts = [...formData.marketing.instagramAccounts];
                           updatedAccounts[index].url = e.target.value;
-                          setFormData((prev) => ({
+                          setFormData(prev => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
@@ -874,10 +893,8 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedAccounts = (formData.marketing.instagramAccounts || []).filter(
-                            (_, i) => i !== index,
-                          );
-                          setFormData((prev) => ({
+                          const updatedAccounts = formData.marketing.instagramAccounts.filter((_, i) => i !== index);
+                          setFormData(prev => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
@@ -906,11 +923,14 @@ export default function ProfileManagementPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setFormData((prev) => ({
+                      setFormData(prev => ({
                         ...prev,
                         marketing: {
                           ...prev.marketing,
-                          lineOAs: [...(prev.marketing.lineOAs || []), { value: "", verified: false, id: Date.now() }],
+                          lineOAs: [
+                            ...prev.marketing.lineOAs,
+                            { id: Date.now().toString(), url: "", verified: false },
+                          ],
                         },
                       }));
                     }}
@@ -921,14 +941,14 @@ export default function ProfileManagementPage() {
 
                 {/* List of Line OAs */}
                 <div className="space-y-3">
-                  {(formData.marketing.lineOAs || []).map((lineOA, index) => (
-                    <div key={lineOA.id || index} className="flex items-center gap-2">
+                  {formData.marketing.lineOAs.map((lineOA, index) => (
+                    <div key={lineOA.id} className="flex items-center gap-2">
                       <Input
-                        value={lineOA.value}
+                        value={lineOA.url}
                         onChange={(e) => {
-                          const updatedLineOAs = [...(formData.marketing.lineOAs || [])];
-                          updatedLineOAs[index].value = e.target.value;
-                          setFormData((prev) => ({
+                          const updatedLineOAs = [...formData.marketing.lineOAs];
+                          updatedLineOAs[index].url = e.target.value;
+                          setFormData(prev => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
@@ -954,8 +974,8 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedLineOAs = (formData.marketing.lineOAs || []).filter((_, i) => i !== index);
-                          setFormData((prev) => ({
+                          const updatedLineOAs = formData.marketing.lineOAs.filter((_, i) => i !== index);
+                          setFormData(prev => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
@@ -984,11 +1004,14 @@ export default function ProfileManagementPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setFormData((prev) => ({
+                      setFormData(prev => ({
                         ...prev,
                         marketing: {
                           ...prev.marketing,
-                          websites: [...(prev.marketing.websites || []), { url: "", verified: false, id: Date.now() }],
+                          websites: [
+                            ...prev.marketing.websites,
+                            { id: Date.now().toString(), url: "", verified: false },
+                          ],
                         },
                       }));
                     }}
@@ -999,14 +1022,14 @@ export default function ProfileManagementPage() {
 
                 {/* List of Websites */}
                 <div className="space-y-3">
-                  {(formData.marketing.websites || []).map((website, index) => (
-                    <div key={website.id || index} className="flex items-center gap-2">
+                  {formData.marketing.websites.map((website, index) => (
+                    <div key={website.id} className="flex items-center gap-2">
                       <Input
                         value={website.url}
                         onChange={(e) => {
-                          const updatedWebsites = [...(formData.marketing.websites || [])];
+                          const updatedWebsites = [...formData.marketing.websites];
                           updatedWebsites[index].url = e.target.value;
-                          setFormData((prev) => ({
+                          setFormData(prev => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
@@ -1032,115 +1055,12 @@ export default function ProfileManagementPage() {
                         size="sm"
                         className="text-red-600 hover:text-red-700 px-2"
                         onClick={() => {
-                          const updatedWebsites = (formData.marketing.websites || []).filter((_, i) => i !== index);
-                          setFormData((prev) => ({
+                          const updatedWebsites = formData.marketing.websites.filter((_, i) => i !== index);
+                          setFormData(prev => ({
                             ...prev,
                             marketing: {
                               ...prev.marketing,
                               websites: updatedWebsites,
-                            },
-                          }));
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Other Marketing Channels */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <Label className="text-base font-medium">ช่องทางการตลาดอื่นๆ</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        marketing: {
-                          ...prev.marketing,
-                          otherChannels: [
-                            ...(prev.marketing.otherChannels || []),
-                            { type: "", url: "", verified: false, id: Date.now() },
-                          ],
-                        },
-                      }));
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-1" /> เพิ่มช่องทาง
-                  </Button>
-                </div>
-
-                {/* List of Other Channels */}
-                <div className="space-y-3">
-                  {(formData.marketing.otherChannels || []).map((channel, index) => (
-                    <div key={channel.id} className="flex items-center gap-2">
-                      <Select
-                        value={channel.type}
-                        onValueChange={(value) => {
-                          const updatedChannels = [...(formData.marketing.otherChannels || [])];
-                          updatedChannels[index].type = value;
-                          setFormData((prev) => ({
-                            ...prev,
-                            marketing: {
-                              ...prev.marketing,
-                              otherChannels: updatedChannels,
-                            },
-                          }));
-                        }}
-                      >
-                        <SelectTrigger className="w-40">
-                          <SelectValue placeholder="เลือกประเภท" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="youtube">YouTube</SelectItem>
-                          <SelectItem value="tiktok">TikTok</SelectItem>
-                          <SelectItem value="twitter">Twitter</SelectItem>
-                          <SelectItem value="linkedin">LinkedIn</SelectItem>
-                          <SelectItem value="other">อื่นๆ</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        placeholder="URL หรือ ID"
-                        value={channel.url}
-                        onChange={(e) => {
-                          const updatedChannels = [...(formData.marketing.otherChannels || [])];
-                          updatedChannels[index].url = e.target.value;
-                          setFormData((prev) => ({
-                            ...prev,
-                            marketing: {
-                              ...prev.marketing,
-                              otherChannels: updatedChannels,
-                            },
-                          }));
-                        }}
-                        className="flex-1"
-                      />
-                      {channel.verified ? (
-                        <Badge variant="outline" className="text-green-600 border-green-600">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          ยืนยันแล้ว
-                        </Badge>
-                      ) : (
-                        <Button variant="outline" size="sm">
-                          <Upload className="w-4 h-4 mr-1" /> แนบหลักฐาน
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 px-2"
-                        onClick={() => {
-                          const updatedChannels = (formData.marketing.otherChannels || []).filter((_, i) => i !== index);
-                          setFormData((prev) => ({
-                            ...prev,
-                            marketing: {
-                              ...prev.marketing,
-                              otherChannels: updatedChannels,
                             },
                           }));
                         }}
@@ -1248,7 +1168,7 @@ export default function ProfileManagementPage() {
                 <div className="mt-2 space-y-3">
                   <Select
                     value={newBankAccount.bankName}
-                    onValueChange={(value) => setNewBankAccount((prev) => ({ ...prev, bankName: value }))}
+                    onValueChange={(value) => setNewBankAccount(prev => ({ ...prev, bankName: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="เลือกธนาคาร" />
@@ -1265,12 +1185,12 @@ export default function ProfileManagementPage() {
                   <Input
                     placeholder="หมายเลขบัญชี"
                     value={newBankAccount.accountNumber}
-                    onChange={(e) => setNewBankAccount((prev) => ({ ...prev, accountNumber: e.target.value }))}
+                    onChange={(e) => setNewBankAccount(prev => ({ ...prev, accountNumber: e.target.value }))}
                   />
                   <Input
                     placeholder="ชื่อบัญชี"
                     value={newBankAccount.accountName}
-                    onChange={(e) => setNewBankAccount((prev) => ({ ...prev, accountName: e.target.value }))}
+                    onChange={(e) => setNewBankAccount(prev => ({ ...prev, accountName: e.target.value }))}
                   />
                   <Button onClick={addBankAccount} className="w-full">
                     <Plus className="w-4 h-4 mr-2" />
@@ -1305,7 +1225,7 @@ export default function ProfileManagementPage() {
                     <Switch
                       checked={formData.visibility.showPhone}
                       onCheckedChange={(checked) =>
-                        setFormData((prev) => ({
+                        setFormData(prev => ({
                           ...prev,
                           visibility: { ...prev.visibility, showPhone: checked },
                         }))
@@ -1320,7 +1240,7 @@ export default function ProfileManagementPage() {
                     <Switch
                       checked={formData.visibility.showEmail}
                       onCheckedChange={(checked) =>
-                        setFormData((prev) => ({
+                        setFormData(prev => ({
                           ...prev,
                           visibility: { ...prev.visibility, showEmail: checked },
                         }))
@@ -1335,7 +1255,7 @@ export default function ProfileManagementPage() {
                     <Switch
                       checked={formData.visibility.showLineId}
                       onCheckedChange={(checked) =>
-                        setFormData((prev) => ({
+                        setFormData(prev => ({
                           ...prev,
                           visibility: { ...prev.visibility, showLineId: checked },
                         }))
@@ -1359,7 +1279,7 @@ export default function ProfileManagementPage() {
                     <Switch
                       checked={formData.visibility.showFacebook}
                       onCheckedChange={(checked) =>
-                        setFormData((prev) => ({
+                        setFormData(prev => ({
                           ...prev,
                           visibility: { ...prev.visibility, showFacebook: checked },
                         }))
@@ -1374,7 +1294,7 @@ export default function ProfileManagementPage() {
                     <Switch
                       checked={formData.visibility.showInstagram}
                       onCheckedChange={(checked) =>
-                        setFormData((prev) => ({
+                        setFormData(prev => ({
                           ...prev,
                           visibility: { ...prev.visibility, showInstagram: checked },
                         }))
@@ -1389,7 +1309,7 @@ export default function ProfileManagementPage() {
                     <Switch
                       checked={formData.visibility.showLineOA}
                       onCheckedChange={(checked) =>
-                        setFormData((prev) => ({
+                        setFormData(prev => ({
                           ...prev,
                           visibility: { ...prev.visibility, showLineOA: checked },
                         }))
@@ -1404,7 +1324,7 @@ export default function ProfileManagementPage() {
                     <Switch
                       checked={formData.visibility.showWebsite}
                       onCheckedChange={(checked) =>
-                        setFormData((prev) => ({
+                        setFormData(prev => ({
                           ...prev,
                           visibility: { ...prev.visibility, showWebsite: checked },
                         }))
@@ -1428,7 +1348,7 @@ export default function ProfileManagementPage() {
                     <Switch
                       checked={formData.visibility.showBanking}
                       onCheckedChange={(checked) =>
-                        setFormData((prev) => ({
+                        setFormData(prev => ({
                           ...prev,
                           visibility: { ...prev.visibility, showBanking: checked },
                         }))
@@ -1453,7 +1373,7 @@ export default function ProfileManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Array.isArray(formData.pendingApprovals) && formData.pendingApprovals.length > 0 ? (
+                {formData.pendingApprovals.length > 0 ? (
                   formData.pendingApprovals.map((item) => (
                     <Card key={item.id} className="p-4">
                       <div className="flex items-start justify-between">
@@ -1476,15 +1396,13 @@ export default function ProfileManagementPage() {
                           </div>
                           <div className="text-xs text-gray-500">
                             ส่งเมื่อ:{" "}
-                            {item.submittedAt
-                              ? new Date(item.submittedAt).toLocaleDateString("th-TH", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "ไม่ระบุ"}
+                            {new Date(item.submittedAt).toLocaleDateString("th-TH", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </div>
                           {item.status === "rejected" && item.rejectionReason && (
                             <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
@@ -1519,7 +1437,11 @@ export default function ProfileManagementPage() {
           <Save className="w-4 h-4 mr-2" />
           บันทึกร่าง
         </Button>
-        <Button onClick={handleSubmitForApproval} className="flex-1">
+        <Button 
+          onClick={submitAgentProfile} 
+          className="flex-1"
+          disabled={formData.pendingApprovals.some(item => item.status === "pending")}
+        >
           <Send className="w-4 h-4 mr-2" />
           ส่งขออนุมัติ
         </Button>
