@@ -46,7 +46,8 @@ export async function GET(request: NextRequest) {
         instagram,
         line_id,
         website,
-        banking
+        banking,
+        email_verified
       `);
 
     // ถ้าเป็น admin หรือมี ?full=true ให้ดึงข้อมูลทั้งหมด
