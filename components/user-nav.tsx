@@ -80,27 +80,19 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {user?.role === 'admin' ? (
-          <>
-            <DropdownMenuItem>
-              <Link href="/admin">
-                <div className="flex items-center gap-2">
-                  <UserIcon className="w-4 h-4" />
-                  Admin
-                </div>
-              </Link>
-            </DropdownMenuItem>
-          </>
+          <DropdownMenuItem className="p-0">
+            <Link href="/admin" className="flex items-center gap-2 w-full px-2 py-1.5">
+              <UserIcon className="w-4 h-4" />
+              Admin
+            </Link>
+          </DropdownMenuItem>
         ) : (
-          <>
-            <DropdownMenuItem>
-              <Link href={`/dashboard/${user?.id}/profile`}>
-                <div className="flex items-center gap-2">
-                  <UserIcon className="w-4 h-4" />
-                  Dashboard
-                </div>
-              </Link>
-            </DropdownMenuItem>
-          </>
+          <DropdownMenuItem className="p-0">
+            <Link href={`/dashboard/${user?.id}/profile`} className="flex items-center gap-2 w-full px-2 py-1.5">
+              <UserIcon className="w-4 h-4" />
+              Dashboard
+            </Link>
+          </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout} className="cursor-pointer">
