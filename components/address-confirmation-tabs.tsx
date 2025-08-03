@@ -39,7 +39,7 @@ interface AddressState {
   subDistrict: string
   postalCode: string
   isDefault?: boolean
-  status?: 'pending' | 'verified' | 'rejected'
+  status?: 'pending' | 'approved' | 'rejected'
 }
 
 export default function AddressConfirmationTabs() {
@@ -365,7 +365,7 @@ export default function AddressConfirmationTabs() {
 
   const getStatusBadge = (status: AddressState['status']) => {
     switch (status) {
-      case 'verified':
+      case 'approved':
         return (
           <div className="bg-green-50 text-green-600 px-3 py-1 rounded-md text-sm inline-flex items-center">
             <Check className="w-4 h-4 mr-1" /> อนุมัติแล้ว
@@ -490,7 +490,7 @@ export default function AddressConfirmationTabs() {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSetDefault(type, address.id)}
-                  disabled={isEditing || loading || address.status !== 'verified'}
+                  disabled={isEditing || loading || address.status !== 'approved'}
                 >
                   ตั้งเป็นที่อยู่หลัก
                 </Button>
