@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Mail, Plus, CheckCircle, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
-
 interface Email {
-  id: number | string;
+  id: string;
   value: string;
   verified: boolean;
   verificationSent: boolean;
@@ -24,30 +19,24 @@ interface Email {
 interface EmailVerificationProps {
   emails: Email[];
   onEmailsChange: (emails: Email[]) => void;
+  onEmailVerified?: (verified: boolean) => void;
 }
 
-export default function EmailVerification({ emails = [], onEmailsChange }: EmailVerificationProps) {
+export default function EmailVerification({ emails = [], onEmailsChange, onEmailVerified }: EmailVerificationProps) {
+  const supabase = createClientComponentClient();
   const [isSending, setIsSending] = useState(false);
   const [otp, setOtp] = useState('');
   const [verifyingEmailId, setVerifyingEmailId] = useState<string | null>(null);
 
-  // ตรวจสอบ session เมื่อโหลด component
+  // Check if any email is verified
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        const updatedEmails = emails.map(e => ({
-          ...e,
-          verified: e.verified || e.value === user.email
-        }));
-        onEmailsChange(updatedEmails);
-      }
-    };
+    const verified = emails.some(email => email.verified);
+    if (onEmailVerified) {
+      onEmailVerified(verified);
+    }
+  }, [emails, onEmailVerified]);
 
-    checkSession();
-  }, []);
-
-  // ส่งลิงก์ยืนยันอีเมล
+  // Send email verification link
   const sendVerification = async (email: string, id: string) => {
     try {
       setIsSending(true);
@@ -57,7 +46,6 @@ export default function EmailVerification({ emails = [], onEmailsChange }: Email
         email,
         options: {
           shouldCreateUser: false,
-          emailRedirectTo: `${window.location.origin}/api/verify-email`,
         },
       });
 
@@ -70,7 +58,7 @@ export default function EmailVerification({ emails = [], onEmailsChange }: Email
 
       toast({
         title: 'ส่งลิงก์ยืนยันเรียบร้อย',
-        description: 'กรุณาตรวจสอบอีเมลของคุณและคลิกลิงก์ยืนยัน',
+        description: 'กรุณาตรวจสอบอีเมลของคุณและกรอกรหัส OTP ที่ได้รับ',
       });
     } catch (error: any) {
       toast({
@@ -83,7 +71,7 @@ export default function EmailVerification({ emails = [], onEmailsChange }: Email
     }
   };
 
-  // ยืนยันด้วย OTP
+  // Verify with OTP
   const verifyWithOtp = async (email: string) => {
     try {
       setIsSending(true);
@@ -107,6 +95,10 @@ export default function EmailVerification({ emails = [], onEmailsChange }: Email
         title: 'ยืนยันอีเมลสำเร็จ',
         description: 'อีเมลของคุณได้รับการยืนยันแล้ว',
       });
+
+      if (onEmailVerified) {
+        onEmailVerified(true);
+      }
     } catch (error: any) {
       toast({
         title: 'ยืนยันไม่สำเร็จ',
@@ -118,7 +110,7 @@ export default function EmailVerification({ emails = [], onEmailsChange }: Email
     }
   };
 
-  // เพิ่มอีเมลใหม่
+  // Add new email
   const addEmail = () => {
     const newEmail: Email = {
       id: Date.now().toString(),
@@ -129,17 +121,29 @@ export default function EmailVerification({ emails = [], onEmailsChange }: Email
     onEmailsChange([...emails, newEmail]);
   };
 
-  // ลบอีเมล
+  // Remove email
   const removeEmail = (id: string) => {
     onEmailsChange(emails.filter(e => e.id !== id));
+    
+    // Check if any email remains verified
+    const verified = emails.some(email => email.id !== id && email.verified);
+    if (onEmailVerified) {
+      onEmailVerified(verified);
+    }
   };
 
-  // อัพเดทอีเมล
+  // Update email
   const updateEmail = (id: string, value: string) => {
     const updatedEmails = emails.map(e => 
-      e.id === id ? { ...e, value } : e
+      e.id === id ? { ...e, value, verified: false, verificationSent: false } : e
     );
     onEmailsChange(updatedEmails);
+    
+    // Check if any email remains verified
+    const verified = updatedEmails.some(email => email.verified);
+    if (onEmailVerified) {
+      onEmailVerified(verified);
+    }
   };
 
   return (

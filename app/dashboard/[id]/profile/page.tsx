@@ -18,6 +18,7 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
@@ -49,10 +50,56 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "@/components/ui/use-toast"
 import EmailVerification from "@/components/EmailVerification"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+
+interface Phone {
+  id: string;
+  value: string;
+  verified: boolean;
+}
+
+interface Email {
+  id: string;
+  value: string;
+  verified: boolean;
+  verificationSent: boolean;
+}
+
+interface LineId {
+  id: string;
+  value: string;
+  verified: boolean;
+}
+
+interface SocialAccount {
+  id: string;
+  url: string;
+  verified: boolean;
+}
+
+interface BankAccount {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  isPrimary: boolean;
+}
+
+interface PendingApproval {
+  id: string;
+  type: string;
+  field: string;
+  oldValue: string;
+  newValue: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: string;
+  rejectionReason?: string;
+}
 
 export default function ProfileManagementPage() {
-  const [activeTab, setActiveTab] = useState("basic")
-  const [isEditing, setIsEditing] = useState(false)
+  const supabase = createClientComponentClient();
+  const [activeTab, setActiveTab] = useState("basic");
+  const [isEditing, setIsEditing] = useState(false);
   const profileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
@@ -88,18 +135,68 @@ export default function ProfileManagementPage() {
       showWebsite: true,
       showBanking: false,
     },
-    pendingApprovals: [],
-  })
-  const [newSpecialty, setNewSpecialty] = useState("")
-  const [newMarketingChannel, setNewMarketingChannel] = useState({ type: "", url: "" })
+    pendingApprovals: [] as PendingApproval[],
+    emailVerified: false,
+  });
+
+  const [newSpecialty, setNewSpecialty] = useState("");
+  const [newMarketingChannel, setNewMarketingChannel] = useState({ type: "", url: "" });
   const [newBankAccount, setNewBankAccount] = useState({
     bankName: "",
     accountNumber: "",
     accountName: "",
   });
 
-  // Fetch approvals from API
+  // Fetch profile data from API
   useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const response = await fetch('/api/agents');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        if (data.data && data.data.length > 0) {
+          const profile = data.data[0];
+          setFormData(prev => ({
+            ...prev,
+            basic: {
+              ...prev.basic,
+              firstName: profile.name?.split(' ')[0] || "",
+              lastName: profile.name?.split(' ').slice(1).join(' ') || "",
+              profileImage: profile.image_url || "",
+              coverImage: profile.cover_image_url || "",
+              address: profile.location || "",
+              bio: profile.bio || "",
+              specialties: profile.specialties || [],
+            },
+            contact: {
+              ...prev.contact,
+              phones: profile.phone ? [{ id: '1', value: profile.phone, verified: true }] : [],
+              emails: profile.email ? [{ id: '1', value: profile.email, verified: profile.email_verified || false, verificationSent: false }] : [],
+              lineIds: profile.line_id ? [{ id: '1', value: profile.line_id, verified: false }] : [],
+            },
+            marketing: {
+              ...prev.marketing,
+              facebookPages: profile.social_facebook ? [{ id: '1', url: profile.social_facebook, verified: false }] : [],
+              instagramAccounts: profile.instagram ? [{ id: '1', url: profile.instagram, verified: false }] : [],
+              websites: profile.website ? [{ id: '1', url: profile.website, verified: false }] : [],
+            },
+            banking: profile.banking || [],
+            emailVerified: profile.email_verified || false,
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+        toast({
+          title: "ไม่สามารถโหลดข้อมูลโปรไฟล์",
+          description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ",
+          variant: "destructive",
+        });
+      }
+    };
+
     const fetchApprovals = async () => {
       try {
         const response = await fetch('/api/agents/approvals');
@@ -107,9 +204,8 @@ export default function ProfileManagementPage() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        // Ensure pendingApprovals is always an array
-        const approvals = Array.isArray(data) ? data : data.status ? [{ status: data.status }] : [];
-        setFormData((prev) => ({
+        const approvals = Array.isArray(data.data) ? data.data : [];
+        setFormData(prev => ({
           ...prev,
           pendingApprovals: approvals,
         }));
@@ -120,24 +216,18 @@ export default function ProfileManagementPage() {
           description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ",
           variant: "destructive",
         });
-        // Set empty array on error to prevent map issues
-        setFormData((prev) => ({
+        setFormData(prev => ({
           ...prev,
           pendingApprovals: [],
         }));
       }
     };
+
+    fetchProfileData();
     fetchApprovals();
   }, []);
 
-  const handleSaveDraft = () => {
-    toast({
-      title: "บันทึกร่างสำเร็จ",
-      description: "ข้อมูลของคุณได้รับการบันทึกเป็นร่างแล้ว",
-    });
-  };
-
-  const submitAgentProfile = async () => {
+  const handleSaveDraft = async () => {
     try {
       const payload = {
         name: `${formData.basic.firstName} ${formData.basic.lastName}`.trim(),
@@ -146,14 +236,15 @@ export default function ProfileManagementPage() {
         image_url: formData.basic.profileImage,
         cover_image_url: formData.basic.coverImage,
         phone: formData.contact.phones[0]?.value || "",
-        email: formData.contact.emails.find(e => e.verified)?.value || "",
+        email: formData.contact.emails[0]?.value || "",
         line_id: formData.contact.lineIds[0]?.value || "",
         social_facebook: formData.marketing.facebookPages[0]?.url || "",
         instagram: formData.marketing.instagramAccounts[0]?.url || "",
         website: formData.marketing.websites[0]?.url || "",
         specialties: formData.basic.specialties,
         banking: formData.banking,
-        status: "pending",
+        status: "draft",
+        email_verified: formData.emailVerified,
       };
 
       const res = await fetch("/api/agents", {
@@ -166,7 +257,81 @@ export default function ProfileManagementPage() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "เกิดข้อผิดพลาดในการส่งข้อมูล");
+        throw new Error(error.error || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      }
+
+      toast({
+        title: "บันทึกร่างสำเร็จ",
+        description: "ข้อมูลของคุณได้รับการบันทึกเป็นร่างแล้ว",
+      });
+    } catch (error) {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: error instanceof Error ? error.message : "ไม่สามารถบันทึกข้อมูลได้",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const submitAgentProfile = async () => {
+    // Validate required fields
+    if (!formData.basic.firstName || !formData.basic.lastName) {
+      toast({
+        title: "ข้อมูลไม่ครบถ้วน",
+        description: "กรุณากรอกชื่อและนามสกุล",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.contact.emails.length || !formData.contact.emails[0].value) {
+      toast({
+        title: "ข้อมูลไม่ครบถ้วน",
+        description: "กรุณากรอกอีเมล",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.emailVerified) {
+      toast({
+        title: "อีเมลยังไม่ได้รับการยืนยัน",
+        description: "กรุณายืนยันอีเมลของคุณก่อนส่งขออนุมัติ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const payload = {
+        name: `${formData.basic.firstName} ${formData.basic.lastName}`.trim(),
+        location: formData.basic.address,
+        bio: formData.basic.bio,
+        image_url: formData.basic.profileImage,
+        cover_image_url: formData.basic.coverImage,
+        phone: formData.contact.phones[0]?.value || "",
+        email: formData.contact.emails[0]?.value || "",
+        line_id: formData.contact.lineIds[0]?.value || "",
+        social_facebook: formData.marketing.facebookPages[0]?.url || "",
+        instagram: formData.marketing.instagramAccounts[0]?.url || "",
+        website: formData.marketing.websites[0]?.url || "",
+        specialties: formData.basic.specialties,
+        banking: formData.banking,
+        status: "pending",
+        email_verified: formData.emailVerified,
+      };
+
+      const res = await fetch("/api/agents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "เกิดข้อผิดพลาดในการส่งข้อมูล");
       }
 
       // Fetch updated approvals after submission
@@ -174,22 +339,20 @@ export default function ProfileManagementPage() {
         try {
           const response = await fetch('/api/agents/approvals');
           const data = await response.json();
-          // Ensure pendingApprovals is always an array
-          const approvals = Array.isArray(data) ? data : data.status ? [{ status: data.status }] : [];
-          setFormData((prev) => ({
+          const approvals = Array.isArray(data.data) ? data.data : [];
+          setFormData(prev => ({
             ...prev,
             pendingApprovals: approvals,
           }));
         } catch (error) {
           console.error('Error fetching approvals after submission:', error);
-          // Set empty array on error
-          setFormData((prev) => ({
+          setFormData(prev => ({
             ...prev,
             pendingApprovals: [],
           }));
         }
       };
-      fetchApprovals();
+      await fetchApprovals();
 
       toast({
         title: "ส่งขออนุมัติสำเร็จ",
@@ -297,6 +460,13 @@ export default function ProfileManagementPage() {
     }));
   };
 
+  const handleEmailVerified = (verified: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      emailVerified: verified,
+    }));
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -338,10 +508,10 @@ export default function ProfileManagementPage() {
           <TabsTrigger value="contact">ข้อมูลติดต่อ</TabsTrigger>
           <TabsTrigger value="marketing">ช่องทางการตลาด</TabsTrigger>
           <TabsTrigger value="banking">ข้อมูลการเงิน</TabsTrigger>
-          <TabsTrigger value="visibility">การแสดงผล</TabsTrigger>
           <TabsTrigger value="approvals">สถานะอนุมัติ</TabsTrigger>
         </TabsList>
 
+        {/* Basic Information Tab */}
         <TabsContent value="basic" className="space-y-6">
           <Card>
             <CardHeader>
@@ -366,7 +536,6 @@ export default function ProfileManagementPage() {
                       folder="avatars"
                       imageUrl={formData.basic.profileImage}
                       onUpload={(url) => {
-                        console.log("Profile image uploaded, new URL:", url);
                         setFormData((prev) => ({
                           ...prev,
                           basic: { ...prev.basic, profileImage: url },
@@ -380,10 +549,7 @@ export default function ProfileManagementPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        console.log("Triggering profile image upload");
-                        profileInputRef.current?.click();
-                      }}
+                      onClick={() => profileInputRef.current?.click()}
                     >
                       <Upload className="w-4 h-4 mr-2" />
                       เปลี่ยนรูปโปรไฟล์
@@ -399,7 +565,6 @@ export default function ProfileManagementPage() {
                         src={formData.basic.coverImage || "/placeholder.svg"}
                         alt="Cover"
                         className="w-full h-full object-cover"
-                        onError={(e) => console.log("Cover image load error:", e)}
                       />
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                         <ImageUploader
@@ -407,7 +572,6 @@ export default function ProfileManagementPage() {
                           folder="covers"
                           imageUrl={formData.basic.coverImage}
                           onUpload={(url) => {
-                            console.log("Cover image uploaded, new URL:", url);
                             setFormData((prev) => ({
                               ...prev,
                               basic: { ...prev.basic, coverImage: url },
@@ -421,10 +585,7 @@ export default function ProfileManagementPage() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => {
-                            console.log("Triggering cover image upload");
-                            coverInputRef.current?.click();
-                          }}
+                          onClick={() => coverInputRef.current?.click()}
                         >
                           <Camera className="w-4 h-4 mr-2" />
                           เปลี่ยนรูปปก
@@ -636,6 +797,7 @@ export default function ProfileManagementPage() {
                     },
                   }));
                 }}
+                onEmailVerified={handleEmailVerified}
               />
 
               <Separator />
@@ -1436,10 +1598,7 @@ export default function ProfileManagementPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t">
-        <Button onClick={handleSaveDraft} variant="outline" className="flex-1">
-          <Save className="w-4 h-4 mr-2" />
-          บันทึกร่าง
-        </Button>
+
         <Button 
           onClick={submitAgentProfile} 
           className="flex-1"
