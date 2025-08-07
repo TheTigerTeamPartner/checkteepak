@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useMemo, useCallback } from "react"
 import { Upload, Clock, FileText, Loader2 } from "lucide-react"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
@@ -81,14 +81,13 @@ export default function DocumentUploadForm() {
     { id: "idCard", name: "บัตรประชาชน", file: null },
     { id: "houseReg", name: "สำเนาทะเบียนบ้าน", file: null },
     { id: "bankStatement", name: "สำเนาบัญชี", file: null },
-    { id: "landDeed", name: "สำเนาโฉนดที่ดิน", file: null },
+    { id: "landDeed", name: "สำเนาโฉนดที่ดิน *", file: null },
   ])
 
   const [overallVerificationStatus, setOverallVerificationStatus] = useState<OverallVerificationStatus>("idle")
   const [overallStatusMessage, setOverallStatusMessage] = useState("")
 
   const uploadedCount = useMemo(() => documents.filter((doc) => doc.file !== null).length, [documents])
-  const allDocumentsSelected = useMemo(() => uploadedCount === documents.length, [uploadedCount, documents.length])
 
   const isOverallProcessing = useMemo(() => overallVerificationStatus === "processing", [overallVerificationStatus])
   const isSubmittedForReview = useMemo(
@@ -100,11 +99,8 @@ export default function DocumentUploadForm() {
     setDocuments((prevDocs) =>
       prevDocs.map((doc) =>
         doc.id === id
-          ? {
-              ...doc,
-              file,
-            }
-          : doc,
+          ? { ...doc, file } // Update the selected document
+          : { ...doc, file: null }, // Clear other documents
       ),
     )
     // Reset overall status if any file is changed
@@ -133,8 +129,8 @@ export default function DocumentUploadForm() {
   }
 
   const handleVerifyDocuments = async () => {
-    if (!allDocumentsSelected) {
-      setOverallStatusMessage("กรุณาอัปโหลดเอกสารให้ครบทุกประเภทก่อนดำเนินการยืนยัน")
+    if (uploadedCount === 0) {
+      setOverallStatusMessage("กรุณาอัปโหลดอย่างน้อยหนึ่งเอกสารก่อนดำเนินการยืนยัน")
       setOverallVerificationStatus("idle")
       return
     }
@@ -178,7 +174,12 @@ export default function DocumentUploadForm() {
       <Card className="w-full max-w-4xl shadow-lg bg-white">
         <CardHeader className="pb-4">
           <CardTitle className="text-2xl font-bold">ยืนยันเอกสาร</CardTitle>
-          <CardDescription>กรุณาอัปโหลดเอกสารที่จำเป็นทั้งหมดเพื่อยืนยันตัวตน</CardDescription>
+          <CardDescription>
+            กรุณาอัปโหลดเอกสารที่จำเป็นเพื่อยืนยันตัวตน <br />
+            <span className="text-sm text-gray-600">
+              หมายเหตุ: เจ้าของบ้านต้องอัปโหลดเอกสารทั้งหมด รวมถึงสำเนาโฉนดที่ดิน ส่วนนายหน้าไม่จำเป็นต้องอัปโหลดสำเนาโฉนดที่ดิน (* หมายถึงไม่บังคับสำหรับนายหน้า)
+            </span>
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {getOverallStatusDisplay(overallVerificationStatus)}
@@ -209,7 +210,7 @@ export default function DocumentUploadForm() {
               </Button>
               <Button
                 onClick={handleVerifyDocuments}
-                disabled={!allDocumentsSelected || isOverallProcessing || isSubmittedForReview}
+                disabled={uploadedCount === 0 || isOverallProcessing || isSubmittedForReview}
                 className="w-full sm:w-auto"
               >
                 {isOverallProcessing ? "กำลังดำเนินการ..." : "ยืนยันเอกสาร"}
@@ -217,9 +218,9 @@ export default function DocumentUploadForm() {
             </div>
           </div>
 
-          {!allDocumentsSelected && overallVerificationStatus === "idle" && (
+          {uploadedCount === 0 && overallVerificationStatus === "idle" && (
             <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-lg text-sm mt-4">
-              <span className="font-semibold">หมายเหตุ:</span> กรุณาอัปโหลดเอกสารให้ครบทุกประเภทก่อนดำเนินการยืนยัน
+              กรุณาอัปโหลดเอกสารที่จำเป็นก่อนดำเนินการยืนยัน
             </div>
           )}
         </CardContent>
