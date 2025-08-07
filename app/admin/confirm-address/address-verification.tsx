@@ -3,7 +3,7 @@
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -397,7 +397,7 @@ export default function Component() {
                                   <div>
                                     <h3 className="font-semibold text-gray-900">{verification?.user?.name}</h3>
                                     <p className="text-sm text-gray-600">อีเมล: {verification?.user?.email}</p>
-                                    <p className="text-sm text-pink-600">เบอร์โทรศัพท์: {verification?.user?.phone}</p>
+                                    <p className="text-sm text-gray-600">เบอร์โทรศัพท์: {verification?.user?.phone}</p>
                                     <div className="flex items-center gap-2 mt-1">
                                       {getStatusText(verification?.status || "pending")}
                                     </div>
@@ -502,19 +502,22 @@ export default function Component() {
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="flex flex-col space-y-2">
+                                  <div className="flex flex-row space-x-2">
                                     <Button
-                                      className="bg-green-600 hover:bg-green-700"
+                                      className="bg-green-600 hover:bg-green-700 w-1/2 text-sm"
                                       onClick={() => handleApprove(verification.id)}
+                                      disabled={verification.status === "approved" || verification.status === "rejected"}
                                     >
-                                      <CheckCircle className="h-4 w-4 mr-2" />
+                                      <CheckCircle className="h-4 w-4 mr-1" />
                                       อนุมัติ
                                     </Button>
                                     <Button
                                       variant="destructive"
+                                      className="w-1/2 text-sm"
                                       onClick={() => handleReject(verification.id)}
+                                      disabled={verification.status === "approved" || verification.status === "rejected"}
                                     >
-                                      <XCircle className="h-4 w-4 mr-2" />
+                                      <XCircle className="h-4 w-4 mr-1" />
                                       ปฏิเสธ
                                     </Button>
                                   </div>
@@ -587,19 +590,22 @@ export default function Component() {
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="flex flex-col space-y-2">
+                                  <div className="flex flex-row space-x-2">
                                     <Button
-                                      className="bg-green-600 hover:bg-green-700"
+                                      className="bg-green-600 hover:bg-green-700 w-1/2 text-sm"
                                       onClick={() => handleApprove(verification.id)}
+                                      disabled={verification.status === "approved" || verification.status === "rejected"}
                                     >
-                                      <CheckCircle className="h-4 w-4 mr-2" />
+                                      <CheckCircle className="h-4 w-4 mr-1" />
                                       อนุมัติ
                                     </Button>
                                     <Button
                                       variant="destructive"
+                                      className="w-1/2 text-sm"
                                       onClick={() => handleReject(verification.id)}
+                                      disabled={verification.status === "approved" || verification.status === "rejected"}
                                     >
-                                      <XCircle className="h-4 w-4 mr-2" />
+                                      <XCircle className="h-4 w-4 mr-1" />
                                       ปฏิเสธ
                                     </Button>
                                   </div>
@@ -616,24 +622,6 @@ export default function Component() {
                       )}
                     </TabsContent>
                   </Tabs>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>หมายเหตุ/เหตุผล</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div>
-                        <Label htmlFor="adminComment">หมายเหตุ/เหตุผล</Label>
-                        <textarea
-                          id="adminComment"
-                          placeholder="กรอกหมายเหตุหรือเหตุผลในการอนุมัติ/ปฏิเสธ"
-                          value={adminComment}
-                          onChange={(e) => setAdminComment(e.target.value)}
-                          rows={4}
-                          className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
               ) : (
                 <Card>
