@@ -1,37 +1,22 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { Search, Camera } from "lucide-react"
+import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useRouter } from "next/navigation"
 
 export function HeroSection() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
-  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchTerm.trim()) {
       setIsSearching(true)
-      // Navigate to search results page
       router.push(`/search-results?q=${encodeURIComponent(searchTerm.trim())}`)
-    }
-  }
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      // Handle image upload logic - could extract text and search
-      console.log("Image uploaded:", file.name)
-      setIsImageDialogOpen(false)
-      // For now, simulate search with image filename
-      router.push(`/search-results?q=${encodeURIComponent(file.name)}`)
     }
   }
 
@@ -58,56 +43,14 @@ export function HeroSection() {
                 />
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 md:h-6 md:w-6 text-white/90" />
               </div>
-
-              <div className="flex border-l border-white/20">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="rounded-none bg-transparent hover:bg-white/10 text-white border-0 px-3 md:px-4 py-4 md:py-6 h-auto"
-                  title="อัพโหลดรูปภาพเพื่อค้นหา"
-                  onClick={() => setIsImageDialogOpen(true)}
-                >
-                  <Camera className="h-5 w-5 md:h-6 md:w-6" />
-                </Button>
-
-                {/* ซ่อนปุ่มค้นหาบนมือถือ */}
-                <Button
-                  type="submit"
-                  className="hidden md:flex rounded-none bg-white/20 hover:bg-white/30 text-white border-0 px-8 py-6 h-auto font-semibold text-lg shadow-none"
-                  disabled={isSearching}
-                >
-                  {isSearching ? "กำลังค้นหา..." : "ค้นหา"}
-                </Button>
-              </div>
+              <Button
+                type="submit"
+                className="rounded-none bg-white/20 hover:bg-white/30 text-white border-0 px-8 py-6 h-auto font-semibold text-lg shadow-none"
+                disabled={isSearching}
+              >
+                {isSearching ? "กำลังค้นหา..." : "ค้นหา"}
+              </Button>
             </div>
-
-            {/* Image Upload Dialog */}
-            <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>อัพโหลดรูปภาพเพื่อค้นหา</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:bg-gray-50 transition-colors">
-                    <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-500">คลิกเพื่ออัพโหลดรูปภาพ หรือลากไฟล์มาวาง</p>
-                    <p className="mt-1 text-xs text-gray-400">รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 5MB</p>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      id="image-upload"
-                    />
-                    <label htmlFor="image-upload" className="cursor-pointer">
-                      <Button type="button" className="mt-4">
-                        เลือกรูปภาพ
-                      </Button>
-                    </label>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
           </form>
         </div>
       </div>

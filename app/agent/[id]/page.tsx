@@ -1,7 +1,8 @@
-"use client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Phone,
   Mail,
@@ -18,123 +19,154 @@ import {
   AlertTriangle,
   CreditCard,
   User,
-} from "lucide-react"
-import { supabase } from "@/lib/supabase"
-import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+} from "lucide-react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AgentProfile {
-  id: string
-  name: string
-  title: string
-  location: string
-  join_date: string
-  verified: boolean
-  profile_image: string
-  cover_image: string
-  bio: string
-  specialties: string[]
-  contact: {
-    phone: string
-    email: string
-    line_id: string
-  }
-  social: {
-    facebook: string
-    instagram: string
-    website: string
-  }
-  stats: {
-    total_contacts: number
-    response_rate: number
-    avg_response_time: string
-    successful_deals: number
-    profile_views: number
-  }
-  status: "verified" | "experienced" | "new"
-  certifications: {
-    id: number
-    name: string
-    issuer: string
-    date: string
-    verified: boolean
-  }[]
+  id: string;
+  name: string;
+  title: string;
+  location: string;
+  join_date: string;
+  status: "verified" | "experienced" | "new";
+  image_url: string; // เปลี่ยนจาก profile_image
+  cover_image_url: string; // เปลี่ยนจาก cover_image
+  bio: string;
+  specialties: string[];
+  phone: string;
+  email: string;
+  line_id: string;
+  social_facebook: string;
+  instagram: string;
+  website: string;
+  stats?: {
+    total_contacts?: number;
+    response_rate?: number;
+    avg_response_time?: string;
+    successful_deals?: number;
+    profile_views?: number;
+  };
+  certifications?: {
+    id: number;
+    name: string;
+    issuer: string;
+    date: string;
+    verified: boolean;
+  }[];
   banking: {
-    id: number
-    bank_name: string
-    account_number: string
-    account_name: string
-    is_primary: boolean
-  }[]
+    id: number;
+    bank_name: string;
+    account_number: string;
+    account_name: string;
+    is_primary: boolean;
+  }[];
 }
 
 export default function AgentProfilePage() {
-  const [agentData, setAgentData] = useState<AgentProfile | null>(null)
-const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const params = useParams()
-  const agentId = params.id
+  const supabase = createClientComponentClient();
+  const { toast } = useToast();
+  const [agentData, setAgentData] = useState<AgentProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const params = useParams();
+  const agentId = params.id as string;
 
   useEffect(() => {
-
     if (!agentId) {
-      setError('No agent ID provided')
-      return
+      setError("No agent ID provided");
+      setLoading(false);
+      return;
     }
 
     const fetchAgentData = async () => {
       try {
-        setLoading(true)
-      
-        
+        setLoading(true);
+
         const { data, error } = await supabase
-          .from('agents')
-          .select('*')
-          .eq('id', agentId)
-          .single()
+          .from("agents")
+          .select(`
+            id,
+            name,
+            title,
+            location,
+            join_date,
+            status,
+            image_url,
+            cover_image_url,
+            bio,
+            specialties,
+            phone,
+            email,
+            line_id,
+            social_facebook,
+            instagram,
+            website,
+            banking
+          `)
+          .eq("id", agentId)
+          .single();
 
         if (error) {
-          console.error('Supabase error:', {
+          console.error("Supabase error:", {
             message: error.message,
             details: error.details,
             code: error.code,
-            hint: error.hint
-          })
-          setError(`Error: ${error.message}\nDetails: ${error.details}\nCode: ${error.code}`)
-          return
+            hint: error.hint,
+          });
+          setError(`Error: ${error.message}\nDetails: ${error.details || "N/A"}\nCode: ${error.code || "N/A"}`);
+          return;
         }
 
         if (!data) {
-          setError(`No agent found with ID: ${agentId}`)
-          return
+          setError(`No agent found with ID: ${agentId}`);
+          return;
         }
-      
-        setAgentData(data)
+
+        setAgentData({
+          ...data,
+          social_facebook: data.social_facebook || "",
+          instagram: data.instagram || "",
+          website: data.website || "",
+          join_date: data.join_date ? new Date(data.join_date).toLocaleDateString("th-TH") : "N/A",
+          stats: {
+            total_contacts: 0, // ค่าเริ่มต้นถ้าไม่มี stats
+            response_rate: 0, // ค่าเริ่มต้นถ้าไม่มี stats
+            avg_response_time: "N/A", // ค่าเริ่มต้นถ้าไม่มี stats
+            successful_deals: 0, // ค่าเริ่มต้นถ้าไม่มี stats
+            profile_views: 0, // ค่าเริ่มต้นถ้าไม่มี stats
+          },
+          certifications: [], // ค่าเริ่มต้นถ้าไม่มี certifications
+          banking: data.banking || [],
+        });
       } catch (err) {
-        console.error('Unexpected error:', err)
-        setError(`Failed to fetch agent data: ${err instanceof Error ? err.message : 'Unknown error'}`)
+        console.error("Unexpected error:", err);
+        setError(`Failed to fetch agent data: ${err instanceof Error ? err.message : "Unknown error"}`);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchAgentData()
-  }, [agentId])
-
-  if (loading) return <div>Loading...</div>
-  if (error) return <div>Error: {error}</div>
-  if (!agentData) return <div>No agent found</div>
+    fetchAgentData();
+  }, [agentId, supabase]);
 
   const copyContact = (type: string, value: string) => {
-    navigator.clipboard.writeText(value)
-  }
-  
+    navigator.clipboard.writeText(value);
+    toast({ title: `คัดลอก${type}สำเร็จ`, description: `${value} ถูกคัดลอกไปยังคลิปบอร์ด` });
+  };
+
+  if (loading) return <div className="text-center py-10">Loading...</div>;
+  if (error) return <div className="text-center py-10 text-red-600">Error: {error}</div>;
+  if (!agentData) return <div className="text-center py-10">No agent found</div>;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Cover Image */}
       <div className="relative h-48 md:h-64 lg:h-80 bg-gradient-to-r from-teal-500 via-blue-600 to-indigo-600 overflow-hidden">
         <img
-          src={agentData?.cover_image || "/placeholder.svg"}
+          src={agentData.cover_image_url || "/placeholder.svg"}
           alt="Cover"
           className="w-full h-full object-cover opacity-30"
         />
@@ -149,12 +181,12 @@ const [loading, setLoading] = useState(true)
             <div className="relative mx-auto lg:mx-0">
               <div className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full overflow-hidden border-4 border-white shadow-2xl ring-4 ring-teal-50">
                 <img
-                  src={agentData?.profile_image || "/placeholder.svg"}
-                  alt={agentData?.name || "Agent"}
+                  src={agentData.image_url || "/placeholder.svg"}
+                  alt={agentData.name || "Agent"}
                   className="w-full h-full object-cover"
                 />
               </div>
-              {agentData?.verified && (
+              {agentData.status === "verified" && (
                 <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-green-500 rounded-full p-2 md:p-2.5 shadow-lg ring-4 ring-white">
                   <CheckCircle className="h-4 w-4 md:h-6 md:w-6 text-white" />
                 </div>
@@ -165,27 +197,27 @@ const [loading, setLoading] = useState(true)
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 lg:gap-6">
                 <div className="space-y-3">
                   <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
-                    {agentData?.name}
+                    {agentData.name}
                   </h1>
-                  <p className="text-lg md:text-xl text-gray-600 font-medium">{agentData?.title}</p>
+                  <p className="text-lg md:text-xl text-gray-600 font-medium">{agentData.title}</p>
                   <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-2 sm:gap-3 text-sm md:text-base text-gray-500">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 md:h-5 md:w-5 text-teal-600" />
-                      <span>{agentData?.location}</span>
+                      <span>{agentData.location}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 md:h-5 md:w-5 text-teal-600" />
-                      <span>สมาชิกตั้งแต่ {agentData?.join_date}</span>
+                      <span>สมาชิกตั้งแต่ {agentData.join_date}</span>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 md:gap-3">
-                    {agentData?.status === "verified" && (
+                    {agentData.status === "verified" && (
                       <Badge className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 text-sm font-medium">
                         <Shield className="h-3 w-3 mr-1.5" />
                         ยืนยันตัวตนแล้ว
                       </Badge>
                     )}
-                    {agentData?.status === "experienced" && (
+                    {agentData.status === "experienced" && (
                       <Badge
                         variant="outline"
                         className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1.5 text-sm font-medium"
@@ -194,7 +226,7 @@ const [loading, setLoading] = useState(true)
                         มืออาชีพ
                       </Badge>
                     )}
-                    {agentData?.status === "new" && (
+                    {agentData.status === "new" && (
                       <Badge
                         variant="outline"
                         className="bg-amber-50 text-amber-700 border-amber-200 px-3 py-1.5 text-sm font-medium"
@@ -223,11 +255,11 @@ const [loading, setLoading] = useState(true)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <p className="text-gray-700 leading-relaxed text-base md:text-lg">{agentData?.bio}</p>
+              <p className="text-gray-700 leading-relaxed text-base md:text-lg">{agentData.bio}</p>
               <div>
                 <h4 className="font-semibold mb-3 text-gray-800 text-lg">ความเชี่ยวชาญ</h4>
                 <div className="flex flex-wrap gap-2 md:gap-3">
-                  {agentData?.specialties?.map((specialty, index) => (
+                  {agentData.specialties?.map((specialty, index) => (
                     <Badge
                       key={index}
                       variant="secondary"
@@ -240,6 +272,7 @@ const [loading, setLoading] = useState(true)
               </div>
             </CardContent>
           </Card>
+
           {/* 2. ข้อมูลติดต่อ */}
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="pb-4">
@@ -258,11 +291,11 @@ const [loading, setLoading] = useState(true)
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">เบอร์โทรศัพท์</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData?.phone}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData.phone}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  {agentData?.status === "verified" ? (
+                  {agentData.status === "verified" ? (
                     <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       ยืนยันแล้ว
@@ -276,7 +309,7 @@ const [loading, setLoading] = useState(true)
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyContact("phone", agentData?.phone)}
+                    onClick={() => copyContact("โทรศัพท์", agentData.phone)}
                     className="hover:bg-gray-100"
                   >
                     <Copy className="h-4 w-4" />
@@ -291,11 +324,11 @@ const [loading, setLoading] = useState(true)
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">อีเมล</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData?.email}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData.email}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  {agentData?.status === "verified" ? (
+                  {agentData.status === "verified" ? (
                     <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       ยืนยันแล้ว
@@ -309,7 +342,7 @@ const [loading, setLoading] = useState(true)
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyContact("email", agentData?.email)}
+                    onClick={() => copyContact("อีเมล", agentData.email)}
                     className="hover:bg-gray-100"
                   >
                     <Copy className="h-4 w-4" />
@@ -324,11 +357,11 @@ const [loading, setLoading] = useState(true)
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">Line ID</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData?.line_id}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData.line_id}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  {agentData?.status === "verified" ? (
+                  {agentData.status === "verified" ? (
                     <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       ยืนยันแล้ว
@@ -342,7 +375,7 @@ const [loading, setLoading] = useState(true)
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyContact("line", agentData?.line_id)}
+                    onClick={() => copyContact("Line ID", agentData.line_id)}
                     className="hover:bg-gray-100"
                   >
                     <Copy className="h-4 w-4" />
@@ -370,11 +403,11 @@ const [loading, setLoading] = useState(true)
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">Facebook Page</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData?.social_facebook}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData.social_facebook}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  {agentData?.status === "verified" ? (
+                  {agentData.status === "verified" ? (
                     <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       ยืนยันแล้ว
@@ -385,8 +418,14 @@ const [loading, setLoading] = useState(true)
                       ไม่ได้ยืนยัน
                     </Badge>
                   )}
-                  <Button variant="outline" size="sm" asChild className="hover:bg-blue-100">
-                  <a href={agentData?.social_facebook} target="_blank" rel="noopener noreferrer">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="hover:bg-blue-100"
+                    disabled={!agentData.social_facebook}
+                  >
+                    <a href={agentData.social_facebook} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -400,11 +439,11 @@ const [loading, setLoading] = useState(true)
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">Instagram</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData?.instagram}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData.instagram}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  {agentData?.status === "verified" ? (
+                  {agentData.status === "verified" ? (
                     <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       ยืนยันแล้ว
@@ -415,8 +454,14 @@ const [loading, setLoading] = useState(true)
                       ไม่ได้ยืนยัน
                     </Badge>
                   )}
-                  <Button variant="outline" size="sm" asChild className="hover:bg-pink-100">
-                  <a href={agentData?.instagram} target="_blank" rel="noopener noreferrer">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="hover:bg-pink-100"
+                    disabled={!agentData.instagram}
+                  >
+                    <a href={agentData.instagram} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -430,11 +475,11 @@ const [loading, setLoading] = useState(true)
                   </div>
                   <div>
                     <div className="font-semibold text-gray-800">เว็บไซต์</div>
-                    <div className="text-sm md:text-base text-gray-600">{agentData?.website}</div>
+                    <div className="text-sm md:text-base text-gray-600">{agentData.website}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-3 md:mt-0">
-                  {agentData?.status === "verified" ? (
+                  {agentData.status === "verified" ? (
                     <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       ยืนยันแล้ว
@@ -445,8 +490,14 @@ const [loading, setLoading] = useState(true)
                       ไม่ได้ยืนยัน
                     </Badge>
                   )}
-                  <Button variant="outline" size="sm" asChild className="hover:bg-gray-100">
-                  <a href={agentData?.website} target="_blank" rel="noopener noreferrer">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="hover:bg-gray-100"
+                    disabled={!agentData.website}
+                  >
+                    <a href={agentData.website} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -466,49 +517,48 @@ const [loading, setLoading] = useState(true)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-  {Array.isArray(agentData?.banking) && agentData.banking.length > 0 ? (
-    agentData.banking.map((account) => (
-      <div
-        key={account.id}
-        className="flex flex-col md:flex-row md:items-center md:justify-between p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200"
-      >
-        <div className="flex items-center gap-4">
-          <div className="p-2 bg-white rounded-lg shadow-sm">
-            <CreditCard className="h-5 w-5 text-gray-600" />
-          </div>
-          <div>
-            <div className="font-semibold text-gray-800">{account.bank_name}</div>
-            <div className="text-sm md:text-base text-gray-600">
-              {account.account_number} - {account.account_name}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 mt-3 md:mt-0">
-          {account.is_primary && (
-            <Badge variant="default" className="bg-teal-600 hover:bg-teal-700 text-white">
-              บัญชีหลัก
-            </Badge>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => copyContact("account", account.account_number)}
-            className="hover:bg-green-100"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    ))
-  ) : (
-    <p className="text-gray-600">ไม่มีข้อมูลบัญชีธนาคาร</p>
-  )}
-</CardContent>
-
+              {Array.isArray(agentData.banking) && agentData.banking.length > 0 ? (
+                agentData.banking.map((account) => (
+                  <div
+                    key={account.id}
+                    className="flex flex-col md:flex-row md:items-center md:justify-between p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-white rounded-lg shadow-sm">
+                        <CreditCard className="h-5 w-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-800">{account.bank_name}</div>
+                        <div className="text-sm md:text-base text-gray-600">
+                          {account.account_number} - {account.account_name}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mt-3 md:mt-0">
+                      {account.is_primary && (
+                        <Badge variant="default" className="bg-teal-600 hover:bg-teal-700 text-white">
+                          บัญชีหลัก
+                        </Badge>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyContact("เลขที่บัญชี", account.account_number)}
+                        className="hover:bg-green-100"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-600">ไม่มีข้อมูลบัญชีธนาคาร</p>
+              )}
+            </CardContent>
           </Card>
 
           {/* Warning Section */}
-          {agentData?.status === "verified" && (
+          {agentData.status === "verified" && (
             <Card className="border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 shadow-lg">
               <CardContent className="p-6 md:p-8">
                 <div className="flex items-start gap-4">
@@ -529,5 +579,5 @@ const [loading, setLoading] = useState(true)
         </div>
       </div>
     </div>
-  )
+  );
 }

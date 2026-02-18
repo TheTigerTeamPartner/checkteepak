@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import {
-  ArrowLeft, Shield, AlertTriangle, AlertCircle,
+  ArrowLeft, Shield, AlertTriangle, AlertCircle, HelpCircle,
   Eye, Phone, MapPin, Calendar, CheckCircle,
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
-type SearchResultType = "verified" | "pending" | "scammer"
+type SearchResultType = "verified" | "pending" | "scammer" | "unknown"
 
 interface SearchResult {
   type: SearchResultType
@@ -50,13 +50,15 @@ export default function SearchResultsPage() {
         const data = json.data
 
         if (data) {
-          const status = data.status || "pending"
-          let type: SearchResultType = "pending"
+          const status = data.status || "unknown"
+          let type: SearchResultType = "unknown"
 
           if (status === "verified") {
             type = "verified"
           } else if (status === "scammer") {
             type = "scammer"
+          }  else if (status === "pending") {
+            type = "pending"
           }
 
           setResult({
@@ -73,7 +75,8 @@ export default function SearchResultsPage() {
               }),
               verificationStatus:
                 type === "verified" ? "ยืนยันตัวตนแล้ว" :
-                type === "scammer" ? "พบประวัติโกง" : "รอการยืนยัน",
+                type === "scammer" ? "พบประวัติโกง" :
+                type === "unknown" ? "ไม่พบข้อมูล" : "รอการยืนยัน",
               profileImage: data.profileImage || "/placeholder.svg",
               specialties: Array.isArray(data.certification)
                 ? data.certification
@@ -89,11 +92,11 @@ export default function SearchResultsPage() {
             },
           })
         } else {
-          setResult({ type: "pending", query })
+          setResult({ type: "unknown", query })
         }
       } catch (err) {
         console.error("Search error:", err)
-        setResult({ type: "pending", query })
+        setResult({ type: "unknown", query })
       }
       setIsLoading(false)
     }
@@ -102,12 +105,13 @@ export default function SearchResultsPage() {
   }, [query])
 
   const getResultColor = (type: SearchResultType) =>
-    type === "verified" ? "green" : type === "scammer" ? "red" : "yellow"
+    type === "verified" ? "green" : type === "scammer" ? "red" : type === "unknown" ? "gray": "yellow"
 
   const getResultIcon = (type: SearchResultType) =>
     type === "verified" ? <Shield className="h-8 w-8" /> :
       type === "scammer" ? <AlertCircle className="h-8 w-8" /> :
-        <AlertTriangle className="h-8 w-8" />
+        type === "unknown" ? <HelpCircle className="h-8 w-8" /> :
+          <AlertTriangle className="h-8 w-8" />
 
   if (isLoading) {
     return (
@@ -123,6 +127,7 @@ export default function SearchResultsPage() {
 
   if (!result) return null
 
+  
   const color = getResultColor(result.type)
 
   return (
@@ -133,17 +138,18 @@ export default function SearchResultsPage() {
           กลับหน้าแรก
         </Link>
 
-        <div className={`bg-white border-l-8 shadow-lg rounded-xl overflow-hidden ${color === "green" ? "border-green-500" : color === "red" ? "border-red-500" : "border-yellow-500"}`}>
-          <div className={`p-6 ${color === "green" ? "bg-green-50" : color === "red" ? "bg-red-50" : "bg-yellow-50"}`}>
+        <div className={`bg-white border-l-8 shadow-lg rounded-xl overflow-hidden ${color === "green" ? "border-green-500" : color === "red" ? "border-red-500" :color === "gray" ? "border-gray-400" : "border-yellow-500"}`}>
+          <div className={`p-6 ${color === "green" ? "bg-green-50" : color === "red" ? "bg-red-50" :color === "gray" ? "bg-gray-50" : "bg-yellow-50"}`}>
             <div className="flex items-center">
-              <div className={`p-3 rounded-full ${color === "green" ? "bg-green-100 text-green-600" : color === "red" ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-600"}`}>
+              <div className={`p-3 rounded-full ${color === "green" ? "bg-green-100 text-green-600" : color === "red" ? "bg-red-100 text-red-600" :color === "gray" ? "bg-gray-100 text-gray-600" : "bg-yellow-100 text-yellow-600"}`}>
                 {getResultIcon(result.type)}
               </div>
               <div className="ml-4">
-                <h2 className={`text-xl font-bold ${color === "green" ? "text-green-800" : color === "red" ? "text-red-800" : "text-yellow-800"}`}>
+                <h2 className={`text-xl font-bold ${color === "green" ? "text-green-800" : color === "red" ? "text-red-800" : color === "gray" ? "text-gray-800" : "text-yellow-800"}`}>
                   {result.type === "verified" && "✅ พบข้อมูลในระบบ - ปลอดภัย"}
                   {result.type === "scammer" && "❌ พบประวัติโกง - ระวัง!"}
                   {result.type === "pending" && "⚠️ รอการยืนยัน - ควรระวัง"}
+                  {result.type === "unknown" && "ไม่พบข้อมูล - ควรระวัง"}
                 </h2>
               </div>
             </div>
@@ -169,7 +175,7 @@ export default function SearchResultsPage() {
                       สมาชิกตั้งแต่ {result.data.joinDate}
                     </div>
                     <div className="flex items-center">
-                      <CheckCircle className={`h-4 w-4 mr-2 ${color === "green" ? "text-green-500" : color === "red" ? "text-red-500" : "text-yellow-500"}`} />
+                      <CheckCircle className={`h-4 w-4 mr-2 ${color === "green" ? "text-green-500" : color === "red" ? "text-red-500" : color === "gray" ? "text-gray-500" : "text-yellow-500"}`} />
                       {result.data.verificationStatus}
                     </div>
                   </div>
